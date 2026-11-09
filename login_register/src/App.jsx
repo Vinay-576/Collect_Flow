@@ -429,10 +429,19 @@ function AuthPanel({ preference, setPreference }) {
         credentials: 'include',
         body: JSON.stringify(payload),
       });
-      const data = await response.json().catch(() => ({}));
+      const contentType = response.headers.get('content-type') || '';
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(data.detail || data.message || 'Authentication failed. Please try again.');
+        const detail = typeof data?.detail === 'string' ? data.detail : typeof data?.message === 'string' ? data.message : '';
+        if (detail) throw new Error(detail);
+        if (response.status === 401) throw new Error('The email or password is incorrect. Check your details and try again.');
+        if (response.status === 404 || !contentType.includes('application/json')) {
+          throw new Error(`The authentication API returned an unexpected response (HTTP ${response.status}). Check that Netlify's COLLECTFLOW_API_URL points to the hosted FastAPI service and that its /api/auth route is available.`);
+        }
+        if (response.status >= 500) throw new Error(`The authentication service is unavailable (HTTP ${response.status}). Check the FastAPI service and its MongoDB connection.`);
+        throw new Error(`Authentication could not be completed (HTTP ${response.status}). Please try again.`);
       }
+      if (!data || typeof data !== 'object') throw new Error('The authentication service returned an invalid response. Check the FastAPI service logs.');
 
       setNotice(data.message || 'Signed in successfully. Opening your workspace…');
       if (data.redirect_path) {
@@ -441,7 +450,9 @@ function AuthPanel({ preference, setPreference }) {
         window.location.assign(dashboardUrl.href);
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Could not connect to CollectFlow. Check that the API is running.');
+      setNotice(error instanceof TypeError
+        ? 'Could not reach the authentication API. Check COLLECTFLOW_API_URL, the API service status, and its allowed Netlify origin.'
+        : error instanceof Error ? error.message : 'Could not connect to CollectFlow. Check that the API is running.');
     } finally {
       setIsSubmitting(false);
     }
