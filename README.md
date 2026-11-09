@@ -18,7 +18,7 @@ The root `netlify.toml` builds both Vite apps into one Netlify site: sign-in is 
 
 1. Push this repository to GitHub and create a Netlify site from the repository. Keep the repository root as the base directory; Netlify reads the build and publish settings from `netlify.toml`.
 2. Host `login_register/backend` as a Python web service and MongoDB on MongoDB Atlas (or another reachable MongoDB service). Run `Database/Collectflow_DB.js` against that database to create the collections and indexes.
-3. In the Netlify site's environment variables, set `COLLECTFLOW_API_URL` to the HTTPS origin of the API service, with no path or trailing `/api` (for example, `https://collectflow-api.example.com`). The build script creates the API proxy and publishes both frontends.
+3. After the API service is reachable, set `COLLECTFLOW_API_URL` in Netlify to its HTTPS origin only, without a path or trailing `/api` (for example, `https://collectflow-api.example.com`), then redeploy. The site build succeeds without this variable, but login and live data need the API; until it is configured, API requests return a clear setup message.
 4. Configure these API-service variables:
 
    - `MONGODB_URI` and `MONGODB_DATABASE`
