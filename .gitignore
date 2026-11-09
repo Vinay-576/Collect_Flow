@@ -1,0 +1,42 @@
+.DS_Store
+Thumbs.db
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies, builds, and caches
+**/node_modules/
+**/dist/
+netlify-dist/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/*.egg-info/
+
+# Local databases, uploads, and exports
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+**/*.bson
+**/*.dump
+**/uploads/
+**/database-dumps/
+**/exports/
+*.zip
+
+# Local administrator grant contains the owner's email address
+Database/GrantPlatformAdmin.js
+
+# Editor and operating-system files
+.vscode/
+.idea/

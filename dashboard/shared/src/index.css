@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body { min-width: 320px; }
+
+button, input, select, textarea { font: inherit; }
+
+@keyframes cf-wave-drift {
+  0%, 100% { transform: translate3d(-1px, 0, 0); }
+  50% { transform: translate3d(2px, -1.5px, 0); }
+}
+
+.cf-wave-drift-slow {
+  animation: cf-wave-drift 5.4s ease-in-out infinite;
+}
+
+.cf-wave-drift-fast {
+  animation: cf-wave-drift 3.8s ease-in-out infinite reverse;
+}
+
+@keyframes cf-jellyfish-glow {
+  0%, 100% { opacity: .42; transform: scale(.82); }
+  50% { opacity: 1; transform: scale(1.14); }
+}
+
+.cf-jellyfish-aura {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cf-jellyfish-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes cf-jellyfish-sway {
+  from { transform: rotate(-4deg); }
+  to { transform: rotate(4deg); }
+}
+
+.cf-jellyfish-tentacles {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: cf-jellyfish-sway 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes cf-jellyfish-bell-glow {
+  0%, 100% { opacity: .38; }
+  50% { opacity: 1; }
+}
+
+.cf-jellyfish-bell-glow {
+  animation: cf-jellyfish-bell-glow 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-wave-drift-slow,
+  .cf-wave-drift-fast {
+    animation: none;
+  }
+
+  .cf-jellyfish-aura,
+  .cf-jellyfish-bell-glow { animation-duration: 5s; }
+  .cf-jellyfish-tentacles { animation-duration: 4s; }
+}

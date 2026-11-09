@@ -1,0 +1,9 @@
+[build]
+command = "npm ci --prefix login_register && npm run build --prefix login_register && npm ci --prefix dashboard && npm run build --prefix dashboard -- --base=/dashboard/ && node scripts/prepare-netlify.mjs"
+publish = "netlify-dist"
+
+[build.environment]
+NODE_VERSION = "20"
+VITE_API_BASE_URL = "/api"
+VITE_DASHBOARD_BASE_URL = "same-origin"
+VITE_LOGIN_URL = "/"
