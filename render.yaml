@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: collectflow-api
+    runtime: python
+    plan: free
+    rootDir: login_register/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: collectflow
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: SESSION_TTL_HOURS
+        value: "168"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: lax
+      - key: FRONTEND_ORIGINS
+        value: https://collectflow576.netlify.app
+      - key: FRONTEND_APP_URL
+        value: https://collectflow576.netlify.app
