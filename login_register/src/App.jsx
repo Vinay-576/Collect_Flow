@@ -506,10 +506,13 @@ function AuthPanel({ preference, setPreference, initialMode = 'register' }) {
     window.location.assign(`${API_BASE}/auth/google/start`);
   };
 
+  const handleMicrosoftSignIn = () => {
+    setNotice('Microsoft sign-in is not configured yet. Continue with Google or email and password.');
+  };
+
   return (
     <section className="auth-area flex min-h-[780px] flex-col px-5 py-4 sm:px-7 sm:py-4 lg:min-h-screen lg:px-4 lg:py-3 xl:px-5">
-      <div className="mx-auto flex w-full max-w-[650px] items-center justify-between">
-        <a href="/" className="text-xs font-semibold text-slate-500 transition hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200">← Home</a>
+      <div className="mx-auto flex w-full max-w-[650px] justify-end">
         <ThemePicker preference={preference} onChange={setPreference} />
       </div>
 
@@ -624,9 +627,12 @@ function AuthPanel({ preference, setPreference, initialMode = 'register' }) {
               <span className="h-px flex-1 bg-slate-300 dark:bg-slate-700" />
             </div>
 
-            <div className="grid gap-2.5">
-              <button type="button" onClick={handleGoogleSignIn} className="social-button flex h-[39px] items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-[11px] font-semibold text-slate-800 transition hover:border-violet-400 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-400/50 dark:hover:bg-slate-800">
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <button type="button" onClick={handleGoogleSignIn} className="social-button flex h-[37px] items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-[11px] font-semibold text-slate-800 transition hover:border-violet-400 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-400/50 dark:hover:bg-slate-800">
                 <GoogleMark /> Continue with Google
+              </button>
+              <button type="button" onClick={handleMicrosoftSignIn} className="social-button flex h-[37px] items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white text-[11px] font-semibold text-slate-800 transition hover:border-violet-400 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-violet-400/50 dark:hover:bg-slate-800">
+                <MicrosoftMark /> Continue with Microsoft
               </button>
             </div>
           </form>
@@ -662,19 +668,35 @@ function GoogleMark() {
   );
 }
 
+function MicrosoftMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+      <path fill="#F35325" d="M1 1h6.5v6.5H1z" />
+      <path fill="#81BC06" d="M8.5 1H15v6.5H8.5z" />
+      <path fill="#05A6F0" d="M1 8.5h6.5V15H1z" />
+      <path fill="#FFBA08" d="M8.5 8.5H15V15H8.5z" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [preference, setPreference] = useAppearance();
   const url = new URL(window.location.href);
-  const wantsAuth = ['/login', '/signup'].includes(url.pathname)
-    || url.searchParams.has('account')
-    || url.searchParams.has('auth_error');
+  const showLandingPage = ['/home', '/landing'].includes(url.pathname)
+    && !url.searchParams.has('account')
+    && !url.searchParams.has('auth_error');
   const initialMode = url.pathname === '/login' || url.searchParams.has('auth_error') ? 'login' : 'register';
 
   return (
-    <div className="min-h-screen bg-[#f5f5fb] font-sans text-slate-900 transition-colors duration-300 dark:bg-[#0b1020]">
-      {wantsAuth
-        ? <AuthPanel preference={preference} setPreference={setPreference} initialMode={initialMode} />
-        : <LandingPage preference={preference} setPreference={setPreference} />}
-    </div>
+    showLandingPage
+      ? <LandingPage preference={preference} setPreference={setPreference} />
+      : (
+        <main className="min-h-screen bg-[#f5f5fb] font-sans text-slate-900 transition-colors duration-300 dark:bg-[#0b1020]">
+          <div className="grid min-h-screen lg:grid-cols-[42.5%_57.5%]">
+            <MarketingPanel />
+            <AuthPanel preference={preference} setPreference={setPreference} initialMode={initialMode} />
+          </div>
+        </main>
+      )
   );
 }
