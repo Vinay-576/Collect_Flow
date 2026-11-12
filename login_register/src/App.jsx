@@ -682,7 +682,7 @@ function MicrosoftMark() {
 export default function App() {
   const [preference, setPreference] = useAppearance();
   const url = new URL(window.location.href);
-  const showLandingPage = ['/home', '/landing'].includes(url.pathname)
+  const showLandingPage = ['/', '/home', '/landing'].includes(url.pathname)
     && !url.searchParams.has('account')
     && !url.searchParams.has('auth_error');
   const initialMode = url.pathname === '/login' || url.searchParams.has('auth_error') ? 'login' : 'register';
@@ -700,3 +700,4 @@ export default function App() {
       )
   );
 }
+
