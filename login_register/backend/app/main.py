@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from email.message import EmailMessage
 import os
 import re
@@ -10,6 +11,9 @@ import ssl
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Literal, Optional
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request as UrlRequest, urlopen
 
 import jwt
 from argon2 import PasswordHasher
@@ -18,6 +22,7 @@ from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -47,6 +52,9 @@ SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USERNAME).strip()
 SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
 SMTP_STARTTLS = os.getenv("SMTP_STARTTLS", "true").lower() == "true"
 FRONTEND_APP_URL = os.getenv("FRONTEND_APP_URL", "http://127.0.0.1:5173").rstrip("/")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "").strip() or f"{FRONTEND_APP_URL}/api/auth/google/callback"
 
 if not JWT_SECRET_KEY or JWT_SECRET_KEY == "REPLACE_WITH_A_LONG_RANDOM_SECRET":
     raise RuntimeError(
@@ -247,6 +255,13 @@ def set_session_cookie(response: Response, user: dict) -> None:
         samesite=COOKIE_SAMESITE,
         max_age=SESSION_TTL_HOURS * 60 * 60,
         path="/",
+    )
+
+
+def google_auth_error(code: str) -> RedirectResponse:
+    return RedirectResponse(
+        url=f"{FRONTEND_APP_URL}/login?auth_error={code}",
+        status_code=status.HTTP_302_FOUND,
     )
 
 
@@ -521,6 +536,124 @@ def login(payload: LoginRequest, response: Response) -> dict:
         "user": safe_user(user),
         "redirect_path": redirect_path,
     }
+
+
+@app.get("/api/auth/google/start")
+def google_sign_in_start() -> Response:
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        return google_auth_error("google_not_configured")
+
+    state = secrets.token_urlsafe(32)
+    query = urlencode(
+        {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+            "prompt": "select_account",
+        }
+    )
+    response = RedirectResponse(
+        url=f"https://accounts.google.com/o/oauth2/v2/auth?{query}",
+        status_code=status.HTTP_302_FOUND,
+    )
+    response.set_cookie(
+        key="collectflow_google_oauth_state",
+        value=state,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+        max_age=300,
+        path="/api/auth/google",
+    )
+    return response
+
+
+@app.get("/api/auth/google/callback")
+def google_sign_in_callback(request: Request) -> Response:
+    def error_redirect(code: str) -> RedirectResponse:
+        response = google_auth_error(code)
+        response.delete_cookie(
+            key="collectflow_google_oauth_state",
+            path="/api/auth/google",
+            httponly=True,
+            secure=COOKIE_SECURE,
+            samesite="lax",
+        )
+        return response
+
+    state = request.query_params.get("state", "")
+    stored_state = request.cookies.get("collectflow_google_oauth_state", "")
+    if not state or not stored_state or not secrets.compare_digest(state, stored_state):
+        return error_redirect("google_signin_failed")
+    if request.query_params.get("error") or not request.query_params.get("code"):
+        return error_redirect("google_signin_failed")
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        return error_redirect("google_not_configured")
+
+    token_request = UrlRequest(
+        "https://oauth2.googleapis.com/token",
+        data=urlencode(
+            {
+                "code": request.query_params["code"],
+                "client_id": GOOGLE_CLIENT_ID,
+                "client_secret": GOOGLE_CLIENT_SECRET,
+                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "grant_type": "authorization_code",
+            }
+        ).encode("utf-8"),
+        headers={"Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(token_request, timeout=15) as token_response:
+            token_payload = json.loads(token_response.read())
+        access_token = token_payload.get("access_token")
+        if not access_token:
+            return error_redirect("google_signin_failed")
+
+        profile_request = UrlRequest(
+            "https://openidconnect.googleapis.com/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+            method="GET",
+        )
+        with urlopen(profile_request, timeout=15) as profile_response:
+            profile = json.loads(profile_response.read())
+    except (HTTPError, URLError, OSError, ValueError, KeyError, json.JSONDecodeError):
+        return error_redirect("google_signin_failed")
+
+    email = normalized_email(str(profile.get("email", "")))
+    google_subject = str(profile.get("sub", ""))
+    if not email or not google_subject:
+        return error_redirect("google_signin_failed")
+    if profile.get("email_verified") is not True:
+        return error_redirect("google_email_unverified")
+
+    user = db.users.find_one({"$or": [{"emailNormalized": email}, {"email": email}]})
+    if not user or user.get("status") != "active":
+        return error_redirect("google_account_not_found")
+    linked_google_subject = user.get("googleSubject")
+    if linked_google_subject and linked_google_subject != google_subject:
+        return error_redirect("google_signin_failed")
+
+    now = utc_now()
+    db.users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"googleSubject": google_subject, "lastLoginAt": now, "updatedAt": now}},
+    )
+    user["googleSubject"] = google_subject
+    destination = f"{FRONTEND_APP_URL}{route_for_user(user)}"
+    response = RedirectResponse(url=destination, status_code=status.HTTP_302_FOUND)
+    response.delete_cookie(
+        key="collectflow_google_oauth_state",
+        path="/api/auth/google",
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+    )
+    set_session_cookie(response, user)
+    return response
 
 
 @app.post("/api/auth/logout")
