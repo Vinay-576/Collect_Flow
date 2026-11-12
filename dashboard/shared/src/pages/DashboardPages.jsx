@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { PeekingCatIllustration } from '../components/CatCompanion';
-import { OctopusCompanion, PandaCompanion } from '../components/RoleCompanions';
+import { DogCompanion, OctopusCompanion, PandaCompanion } from '../components/RoleCompanions';
 import { apiRequest, useApiData } from '../lib/api';
 import { formatDate, formatMoney, formatMoneyMap } from '../lib/format';
 
@@ -71,14 +71,82 @@ function RecoveryChart({ dark, series = [] }) {
   useEffect(() => { if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]); }, [currencies, currency]);
   const selected = currency || currencies[0] || 'INR';
   const values = series.map((item) => Number(item.amount?.[selected] || 0));
-  const max = Math.max(...values, 0);
+  const max = Math.max(...values, 0) * 1.12;
   const hasPayments = values.some((value) => value > 0);
+  const plot = { left: 68, right: 630, top: 22, bottom: 164 };
+  const points = values.map((value, index) => ({
+    x: plot.left + (series.length <= 1 ? (plot.right - plot.left) / 2 : (index / (series.length - 1)) * (plot.right - plot.left)),
+    y: plot.bottom - (value / (max || 1)) * (plot.bottom - plot.top),
+    value,
+    label: series[index]?.label || '',
+  }));
+  const linePath = points.map(({ x, y }, index) => `${index ? 'L' : 'M'} ${x} ${y}`).join(' ');
+  const areaPath = points.length ? `${linePath} L ${points.at(-1).x} ${plot.bottom} L ${points[0].x} ${plot.bottom} Z` : '';
+  const compactMoney = (value) => {
+    try { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: selected, notation: 'compact', maximumFractionDigits: 1 }).format(value); }
+    catch { return `${selected} ${Number(value).toLocaleString('en-IN', { notation: 'compact', maximumFractionDigits: 1 })}`; }
+  };
+  const latest = series.at(-1);
 
   return <section className={`rounded-2xl p-5 ${panelClass(dark)}`}>
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h2 className={`text-sm font-bold ${headingClass(dark)}`}>Recovery trend</h2><p className={`mt-1 text-xs ${mutedClass(dark)}`}>Verified payment allocations by month</p></div>{currencies.length > 1 && <select value={selected} onChange={(event) => setCurrency(event.target.value)} aria-label="Chart currency" className={`rounded-lg border px-2.5 py-1.5 text-xs ${dark ? 'border-[#3a3150] bg-[#171326] text-white' : 'border-[#e5def4] bg-white text-[#352747]'}`}>{currencies.map((code) => <option key={code}>{code}</option>)}</select>}</div>
-    {!hasPayments ? <EmptyState dark={dark} title="No verified payments yet" detail="Once payments are verified and allocated to invoices, their monthly recovery trend will appear here." icon={BarChart2} /> : <div className={`grid h-[220px] grid-cols-6 items-end gap-2 rounded-xl border px-3 pb-3 pt-4 sm:gap-4 ${dark ? 'border-[#302744] bg-[#171326]' : 'border-[#f0ebf7] bg-[#fcfbff]'}`}>
-      {series.map((item, index) => <div key={item.month} className="flex h-full flex-col items-center justify-end gap-2"><span className={`text-[9px] font-semibold sm:text-[10px] ${mutedClass(dark)}`}>{formatMoney(item.amount?.[selected] || 0, selected)}</span><div className="flex w-full flex-1 items-end"><div className={`w-full rounded-t-lg bg-gradient-to-t from-violet-700 to-violet-300 transition-all ${index === series.length - 1 ? 'opacity-100' : 'opacity-75'}`} style={{ height: `${max ? Math.max(4, (values[index] / max) * 100) : 0}%` }} /></div><span className={`text-[9px] sm:text-[10px] ${mutedClass(dark)}`}>{item.label}</span></div>)}
+    <div className="mb-3 flex flex-wrap items-start justify-between gap-3"><div><h2 className={`text-sm font-bold ${headingClass(dark)}`}>Recovery trend</h2><p className={`mt-1 text-xs ${mutedClass(dark)}`}>Verified payment allocations by month · {selected}</p></div><div className="flex items-center gap-3">{latest && hasPayments && <div className="hidden text-right sm:block"><p className={`text-[10px] ${mutedClass(dark)}`}>{latest.label}</p><p className={`text-sm font-bold ${headingClass(dark)}`}>{formatMoney(latest.amount?.[selected] || 0, selected)}</p></div>}{currencies.length > 1 && <select value={selected} onChange={(event) => setCurrency(event.target.value)} aria-label="Chart currency" className={`rounded-lg border px-2.5 py-1.5 text-xs ${dark ? 'border-[#3a3150] bg-[#171326] text-white' : 'border-[#e5def4] bg-white text-[#352747]'}`}>{currencies.map((code) => <option key={code}>{code}</option>)}</select>}</div></div>
+    {!hasPayments ? <EmptyState dark={dark} title="No verified payments yet" detail="Once payments are verified and allocated to invoices, their monthly recovery trend will appear here." icon={BarChart2} /> : <div className={`overflow-hidden rounded-xl border px-2 pt-1 sm:px-3 ${dark ? 'border-[#302744] bg-[#171326]' : 'border-[#f0ebf7] bg-[#fcfbff]'}`}>
+      <svg className="h-[218px] w-full overflow-visible" viewBox="0 0 650 210" role="img" aria-label={`Monthly verified recoveries in ${selected}`}>
+        <defs><linearGradient id="recoveryAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8b5cf6" stopOpacity={dark ? '.3' : '.2'} /><stop offset="1" stopColor="#8b5cf6" stopOpacity="0" /></linearGradient></defs>
+        {[0, 1, 2, 3, 4].map((tick) => {
+          const y = plot.top + (tick / 4) * (plot.bottom - plot.top);
+          const value = max * (1 - tick / 4);
+          return <g key={tick}><line x1={plot.left} x2={plot.right} y1={y} y2={y} stroke={dark ? '#382e4b' : '#eee8f6'} strokeDasharray={tick === 4 ? '0' : '3 5'} /><text x={plot.left - 9} y={y + 3} textAnchor="end" fontSize="9" fill={dark ? '#938aa4' : '#8a8198'}>{compactMoney(value)}</text></g>;
+        })}
+        {points.length > 1 && <path d={areaPath} fill="url(#recoveryAreaFill)" />}
+        {points.length > 1 && <path d={linePath} fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+        {points.map((point, index) => <g key={`${series[index]?.month || point.label}-${index}`}><circle cx={point.x} cy={point.y} r="5.5" fill={dark ? '#19152a' : 'white'} stroke="#8b5cf6" strokeWidth="2.5" vectorEffect="non-scaling-stroke"><title>{point.label}: {formatMoney(point.value, selected)}</title></circle><text x={point.x} y="197" textAnchor="middle" fontSize="10" fill={dark ? '#aaa2bd' : '#746b83'}>{point.label}</text></g>)}
+      </svg>
     </div>}
+  </section>;
+}
+
+function InvoiceMixChart({ dark, invoices = [], loading = false, error, onRetry }) {
+  const categories = [
+    { label: 'Overdue', color: '#e87972', test: (status) => status === 'overdue' },
+    { label: 'Awaiting payment', color: '#8b5cf6', test: (status) => !['overdue', 'settled', 'paid', 'cancelled', 'written off', 'draft'].includes(status) },
+    { label: 'Settled', color: '#39a982', test: (status) => status === 'settled' || status === 'paid' },
+    { label: 'Other', color: dark ? '#625a71' : '#b8aec7', test: (status) => ['cancelled', 'written off', 'draft'].includes(status) },
+  ];
+  const counts = categories.map((category) => invoices.filter((invoice) => category.test(String(invoice.status || '').trim().toLowerCase())).length);
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  return <section className={`rounded-2xl p-5 ${panelClass(dark)}`}>
+    <div className="mb-3"><h2 className={`text-sm font-bold ${headingClass(dark)}`}>Invoice status mix</h2><p className={`mt-1 text-xs ${mutedClass(dark)}`}>Share of invoices by current status</p></div>
+    {error ? <RequestState dark={dark} error={error} onRetry={onRetry} /> : loading ? <div className={`grid min-h-[210px] place-items-center text-xs ${mutedClass(dark)}`}>Loading invoice data…</div> : !total ? <EmptyState dark={dark} title="No invoices to chart" detail="Invoice status distribution will appear when invoices are available in this workspace." icon={FileText} /> : <div className="grid items-center gap-5 sm:grid-cols-[160px_minmax(0,1fr)]">
+      <div className="relative mx-auto h-40 w-40">
+        <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90" role="img" aria-label={`Invoice status distribution for ${total} invoices`}>
+          <circle cx="70" cy="70" r={radius} fill="none" stroke={dark ? '#302744' : '#f0ebf7'} strokeWidth="17" />
+          {categories.map((category, index) => {
+            const length = total ? (counts[index] / total) * circumference : 0;
+            const currentOffset = offset;
+            offset += length;
+            return counts[index] ? <circle key={category.label} cx="70" cy="70" r={radius} fill="none" stroke={category.color} strokeWidth="17" strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-currentOffset} strokeLinecap="butt"><title>{category.label}: {counts[index]}</title></circle> : null;
+          })}
+        </svg>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"><span className={`text-[26px] font-bold tracking-tight ${headingClass(dark)}`}>{total}</span><span className={`text-[10px] ${mutedClass(dark)}`}>invoices</span></div>
+      </div>
+      <div className="space-y-3">{categories.filter((category, index) => counts[index] > 0).map((category) => {
+        const index = categories.indexOf(category);
+        const percent = Math.round((counts[index] / total) * 100);
+        return <div key={category.label} className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} /><span className={`truncate text-xs ${dark ? 'text-slate-300' : 'text-slate-600'}`}>{category.label}</span></div><span className={`shrink-0 text-xs font-semibold ${headingClass(dark)}`}>{counts[index]} <span className={`font-normal ${mutedClass(dark)}`}>· {percent}%</span></span></div>;
+      })}</div>
+    </div>}
+  </section>;
+}
+
+function MomentumCard({ dark, recovered }) {
+  return <section className={`flex min-h-[188px] items-center justify-between gap-3 overflow-hidden rounded-2xl border p-5 ${dark ? 'border-[#37404a] bg-gradient-to-br from-[#20252e] to-[#262135]' : 'border-[#e0e9df] bg-gradient-to-br from-[#f0f6ed] to-[#f4f0fb]'}`}>
+    <div className="min-w-0"><span className={`inline-flex rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${dark ? 'bg-emerald-400/10 text-emerald-200' : 'bg-emerald-100 text-emerald-800'}`}>Monthly momentum</span><h2 className={`mt-2 text-base font-bold ${headingClass(dark)}`}>Small steps add up</h2><p className={`mt-1 max-w-[240px] text-xs leading-relaxed ${mutedClass(dark)}`}>Verified payments this month</p><p className={`mt-1 text-sm font-bold ${dark ? 'text-emerald-200' : 'text-emerald-800'}`}>{formatMoneyMap(recovered)}</p></div>
+    <div className="mr-1 shrink-0"><DogCompanion isDark={dark} compact /></div>
   </section>;
 }
 
@@ -89,6 +157,7 @@ function CasesTable({ dark, rows = [] }) {
 
 export function OverviewPage({ dark, user, companionsHidden, onToggleCompanions, onNavigate }) {
   const { data, loading, error, reload } = useApiData('/api/dashboard/summary');
+  const invoiceData = useApiData('/api/dashboard/invoices?limit=250');
   const metrics = data?.metrics || {};
   const cards = user.account_type === 'agency' ? [
     { label: 'Client receivables', value: formatMoneyMap(metrics.receivables), detail: 'Across active mandates', icon: Wallet, tone: 'violet' },
@@ -107,9 +176,13 @@ export function OverviewPage({ dark, user, companionsHidden, onToggleCompanions,
     <RequestState dark={dark} loading={loading} error={error} onRetry={reload} />
     {data && !error && <>
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map((card) => <MetricCard key={card.label} dark={dark} {...card} />)}</div>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(290px,.9fr)]">
         <RecoveryChart dark={dark} series={data?.recovery_series || []} />
+        <InvoiceMixChart dark={dark} invoices={invoiceData.data?.items || []} loading={invoiceData.loading} error={invoiceData.error} onRetry={invoiceData.reload} />
+      </div>
+      <div className={`mt-4 grid gap-4 ${user.account_type === 'creditor' ? 'xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,.8fr)]' : ''}`}>
         <section className={`rounded-2xl p-5 ${panelClass(dark)}`}><div className="mb-4 flex items-start justify-between"><div><h2 className={`text-sm font-bold ${headingClass(dark)}`}>Needs attention</h2><p className={`mt-1 text-xs ${mutedClass(dark)}`}>Tasks due today or earlier</p></div><button type="button" onClick={() => onNavigate('pulse')} className="text-xs font-semibold text-violet-500 hover:text-violet-400">View all</button></div>{data?.priority_tasks?.length ? <div className="space-y-2">{data.priority_tasks.slice(0, 5).map((task) => <div key={task.id} className={`flex items-start gap-3 rounded-xl p-3 ${dark ? 'bg-[#211b34]' : 'bg-[#faf8fd]'}`}><span className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg ${dark ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-600'}`}><CalendarCheck size={14} /></span><div className="min-w-0"><p className={`truncate text-xs font-semibold ${headingClass(dark)}`}>{task.title}</p><p className={`mt-1 text-[10px] ${mutedClass(dark)}`}>{task.case_reference || 'Linked case'} · due {formatDate(task.due_at, { day: 'numeric', month: 'short' })}</p></div></div>)}</div> : <EmptyState dark={dark} title="You’re up to date" detail="No assigned tasks are currently due." icon={Check} />}</section>
+        {user.account_type === 'creditor' && <MomentumCard dark={dark} recovered={metrics.recovered_this_month} />}
       </div>
       <section className={`mt-4 rounded-2xl p-5 ${panelClass(dark)}`}><div className="mb-4 flex items-center justify-between"><div><h2 className={`text-sm font-bold ${headingClass(dark)}`}>Recent recovery cases</h2><p className={`mt-1 text-xs ${mutedClass(dark)}`}>Latest cases available in this workspace</p></div><button type="button" onClick={() => onNavigate('pulse')} className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${dark ? 'border-[#3a3150] text-violet-200 hover:bg-violet-500/10' : 'border-[#e5def4] text-violet-700 hover:bg-violet-50'}`}>Daily Pulse</button></div>{loading ? null : <CasesTable dark={dark} rows={data?.recent_cases || []} />}</section>
     </>}
@@ -132,6 +205,10 @@ export function DebtorOverviewPage({ dark, user, companionsHidden, onToggleCompa
       <MetricCard dark={dark} icon={Clock} label="Past due" value={formatMoneyMap(metrics.overdue_amount)} detail={`${metrics.overdue_invoices ?? 0} overdue invoices`} tone="rose" />
       <MetricCard dark={dark} icon={ArrowUpRight} label="Paid this month" value={formatMoneyMap(metrics.recovered_this_month)} detail="Verified payments" tone="indigo" />
       <MetricCard dark={dark} icon={FileText} label="Open invoices" value={metrics.open_invoices ?? openInvoices.length} detail="Awaiting payment or overdue" tone="blue" />
+    </div>
+    <div className="mb-4 grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(290px,.9fr)]">
+      <RecoveryChart dark={dark} series={summary.data?.recovery_series || []} />
+      <InvoiceMixChart dark={dark} invoices={invoiceRows} loading={invoices.loading} error={invoices.error} onRetry={invoices.reload} />
     </div>
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.8fr)]">
       <section className={`rounded-2xl p-5 ${panelClass(dark)}`}>
@@ -351,3 +428,4 @@ export function AdminAccessPage({ dark, user, onOpenWorkspace, onOpenOwnAccount 
     {accountType === 'debtor' && debtors.data && !debtors.loading && (debtors.data.items.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{debtors.data.items.map((debtor) => <button key={debtor.id} type="button" onClick={() => onOpenWorkspace({ account_type: 'debtor', organization_id: selectedCreditor.id, workspace_name: selectedCreditor.name, debtor_id: debtor.id })} className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-400 ${panelClass(dark)}`}><span className={`grid h-10 w-10 place-items-center rounded-xl ${dark ? 'bg-violet-500/15 text-violet-200' : 'bg-violet-50 text-violet-700'}`}><Users size={17} /></span><strong className={`mt-3 block text-sm ${headingClass(dark)}`}>{debtor.name}</strong><span className={`mt-1 block truncate text-[10px] ${mutedClass(dark)}`}>{debtor.email || 'Active portal account'}</span><span className="mt-4 inline-flex rounded-full bg-violet-600 px-3 py-1.5 text-[10px] font-bold text-white">Open debtor portal</span></button>)}</div> : <EmptyState dark={dark} title="No active debtor accounts" detail="Debtors with an accepted portal invitation will appear under their creditor workspace." icon={Users} />)}
   </>;
 }
+
