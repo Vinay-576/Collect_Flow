@@ -63,6 +63,36 @@ export function PandaCompanion({ isDark }) {
   </MascotFrame>;
 }
 
+export function DogCompanion({ isDark, compact = false }) {
+  const { petted, pet } = usePetReaction();
+  return <MascotFrame label="sleepy dog" isDark={isDark} petted={petted} pet={pet} compact={compact}>
+    <svg className={`${compact ? 'h-24 w-40' : 'h-28 w-48'} overflow-visible`} viewBox="0 0 215 118" fill="none" aria-hidden="true">
+      <ellipse cx="111" cy="106" rx="61" ry="7" fill={isDark ? '#8066bd' : '#c9bee2'} opacity=".28" />
+      {/* Cozy curled body and paws */}
+      <ellipse cx="129" cy="80" rx="50" ry="28" fill={isDark ? '#bd8b5f' : '#d7a274'} />
+      <ellipse cx="133" cy="78" rx="37" ry="21" fill={isDark ? '#e9c79f' : '#f5d8b4'} />
+      <ellipse cx="107" cy="98" rx="14" ry="7" fill="#f6e5d1" stroke="#684a3d" strokeWidth="2" />
+      <ellipse cx="143" cy="98" rx="14" ry="7" fill="#f6e5d1" stroke="#684a3d" strokeWidth="2" />
+      {/* Floppy ears */}
+      <path d="M69 45C55 38 50 56 57 75C61 86 73 83 79 68Z" fill={isDark ? '#9c684e' : '#a97659'} stroke="#684a3d" strokeWidth="2.4" />
+      <path d="M143 45C158 37 166 53 160 72C157 83 145 84 139 68Z" fill={isDark ? '#9c684e' : '#a97659'} stroke="#684a3d" strokeWidth="2.4" />
+      {/* Round face and cream muzzle */}
+      <ellipse cx="108" cy="61" rx="42" ry="35" fill={isDark ? '#dfb58c' : '#f1c99d'} stroke="#684a3d" strokeWidth="2.5" />
+      <path d="M84 65C87 53 98 50 108 57C118 50 130 53 133 65C133 77 122 83 108 83C94 83 84 77 84 65Z" fill="#fff3df" />
+      {petted ? <g stroke="#4d352e" strokeWidth="2.4" strokeLinecap="round"><path d="M87 58Q93 64 99 58" /><path d="M117 58Q123 64 129 58" /></g> : <g fill="#49342e"><ellipse cx="93" cy="58" rx="3.6" ry="4.6" /><ellipse cx="123" cy="58" rx="3.6" ry="4.6" /><circle cx="92" cy="56.5" r="1.2" fill="white" /><circle cx="122" cy="56.5" r="1.2" fill="white" /></g>}
+      <ellipse cx="108" cy="67" rx="5" ry="3.8" fill="#49342e" />
+      <path d={petted ? 'M102 73Q108 80 114 73' : 'M103 73Q108 78 113 73'} stroke="#684a3d" strokeWidth="2" strokeLinecap="round" />
+      <ellipse cx="82" cy="68" rx="6" ry="3.5" fill="#f39bb2" opacity=".62" /><ellipse cx="134" cy="68" rx="6" ry="3.5" fill="#f39bb2" opacity=".62" />
+      {/* Tail, sleepy marks, and a little heart */}
+      <path d="M175 72C193 59 199 73 188 81" stroke={isDark ? '#bd8b5f' : '#d7a274'} strokeWidth="8" strokeLinecap="round" />
+      <path d="M176 72C194 59 200 73 189 81" stroke="#684a3d" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M64 20C59 15 52 21 57 26L66 34L75 25C80 18 70 14 66 20Z" fill="#f18b9e" />
+      <path d="M145 24Q149 19 153 24M153 19Q157 14 161 19" stroke={isDark ? '#cfbee9' : '#9a7ec6'} strokeWidth="2" strokeLinecap="round" />
+      {petted && <path d="M169 34l2.2 5 5 2.2-5 2.2-2.2 5-2.2-5-5-2.2 5-2.2z" fill="#ffd978" />}
+    </svg>
+  </MascotFrame>;
+}
+
 export function OctopusCompanion({ isDark, compact = false }) {
   const { petted, pet } = usePetReaction();
   const arm = isDark ? '#a58af1' : '#926de0';
@@ -201,3 +231,4 @@ export function JellyfishCompanion({ isDark, compact = false }) {
     </svg>
   </MascotFrame>;
 }
+
