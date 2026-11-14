@@ -131,10 +131,10 @@ function readThemePreference() {
 }
 
 function CollectFlowLogo({ dark }) {
-  return <div className="flex shrink-0 items-center gap-2.5" aria-label="CollectFlow">
+  return <a href="/" className="flex shrink-0 items-center gap-2.5 rounded-lg transition-opacity hover:opacity-85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-400" aria-label="CollectFlow home">
     <img src="/collectflow-logo.png" alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
     <span className="text-xl font-extrabold tracking-tight"><span className={dark ? 'text-white' : 'text-[#251d38]'}>Collect</span><span className={dark ? 'text-[#c4adff]' : 'text-[#7851dd]'}>Flow</span></span>
-  </div>;
+  </a>;
 }
 
 function Header({ user, accountType, adminScope, dark, page, navItems, platformAdmin, onNavigate, onThemeToggle, onGlobalSearch, onSignOut, onAdminHome, onOpenOwnAccount }) {
