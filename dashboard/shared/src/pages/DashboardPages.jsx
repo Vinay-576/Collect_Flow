@@ -172,7 +172,7 @@ export function OverviewPage({ dark, user, companionsHidden, onToggleCompanions,
   ];
 
   return <>
-    <PageHeading dark={dark} eyebrow={user.account_type === 'agency' ? 'Agency workspace' : 'Creditor workspace'} title="Overview" description={`Live receivables and recovery work for ${user.organization_name || (user.account_type === 'agency' ? 'your agency' : 'your business')}.`} showCompanion companion={user.account_type === 'agency' ? 'octopus' : 'cat'} companionsHidden={companionsHidden} onToggleCompanions={onToggleCompanions} />
+    <PageHeading dark={dark} eyebrow={user.account_type === 'agency' ? 'Agency workspace' : 'Creditor workspace'} title="Overview" description={`Live receivables and recovery work for ${user.organization_name || (user.account_type === 'agency' ? 'your agency' : 'your business')}.`} showCompanion companion={user.account_type === 'agency' ? 'panda' : 'cat'} companionsHidden={companionsHidden} onToggleCompanions={onToggleCompanions} />
     <RequestState dark={dark} loading={loading} error={error} onRetry={reload} />
     {data && !error && <>
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map((card) => <MetricCard key={card.label} dark={dark} {...card} />)}</div>
@@ -259,7 +259,7 @@ export function DailyPulsePage({ dark, user, companionsHidden, onToggleCompanion
   };
 
   return <>
-    <PageHeading dark={dark} eyebrow="Daily Pulse" title="Your work queue" description="Tasks and follow-ups assigned to your authorised workspace." showCompanion companion={user.account_type === 'agency' ? 'octopus' : 'cat'} companionsHidden={companionsHidden} onToggleCompanions={onToggleCompanions} />
+    <PageHeading dark={dark} eyebrow={user.account_type === 'agency' ? 'Agency recovery' : 'Daily Pulse'} title="Your work queue" description="Tasks and follow-ups assigned to your authorised workspace." showCompanion companion={user.account_type === 'agency' ? 'panda' : 'cat'} companionsHidden={companionsHidden} onToggleCompanions={onToggleCompanions} />
     <RequestState dark={dark} loading={loading} error={error} onRetry={reload} />
     {data && !error && <>
       <div className="mb-4 grid gap-3 sm:grid-cols-3"><MetricCard dark={dark} icon={CalendarCheck} label="Open tasks" value={openCount} detail="Assigned and not completed" /><MetricCard dark={dark} icon={Check} label="Completed" value={completedCount} detail="In this task list" tone="indigo" /><MetricCard dark={dark} icon={BarChart2} label="Progress" value={`${progress}%`} detail="Completed tasks" tone="blue" /></div>
@@ -376,7 +376,7 @@ export function DocumentsPage({ dark }) {
 
 export function SettingsPage({ dark, user, themePreference, onThemeChange, companionsHidden, onToggleCompanions, onSignOut }) {
   const options = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'System' }];
-  const companionName = user.account_type === 'debtor' ? 'Jellyfish' : user.account_type === 'agency' ? 'Octopus' : 'Cat';
+  const companionName = user.account_type === 'debtor' ? 'Jellyfish' : user.account_type === 'agency' ? 'Panda' : 'Cat';
   return <>
     <PageHeading dark={dark} eyebrow={user.account_type === 'debtor' ? 'Your account' : 'Preferences'} title={user.account_type === 'debtor' ? 'My Profile' : 'Settings'} description={user.account_type === 'debtor' ? 'Review your personal details, portal access and dashboard preferences.' : 'Manage your dashboard appearance and review your signed-in workspace.'} />
     <div className="grid gap-4 xl:grid-cols-2">

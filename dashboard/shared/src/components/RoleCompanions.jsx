@@ -55,6 +55,12 @@ export function PandaCompanion({ isDark }) {
       <ellipse cx="94" cy="48" rx="8.5" ry="11" transform="rotate(22 94 48)" fill="#282638" />
       <ellipse cx="122" cy="48" rx="8.5" ry="11" transform="rotate(-22 122 48)" fill="#282638" />
       {petted ? <g stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M90 48 Q94 52 98 48" /><path d="M118 48 Q122 52 126 48" /></g> : <g fill="#fff"><circle cx="96" cy="45" r="2" /><circle cx="124" cy="45" r="2" /></g>}
+      {/* A bamboo shoot reaches the panda's mouth and rests in its paw. */}
+      <path d="M162 108C145 94 133 81 122 70C118 66 115 63 112 60" stroke={isDark ? '#6f9d75' : '#719f60'} strokeWidth="4.2" strokeLinecap="round" />
+      <path d="M148 95l4-5M136 83l4-5M125 72l4-5" stroke={isDark ? '#9ac590' : '#98bf79'} strokeWidth="2" strokeLinecap="round" />
+      <path d="M151 93C155 81 165 77 171 81C168 91 160 96 151 93Z" fill={isDark ? '#75ac79' : '#7eaf69'} />
+      <path d="M139 84C133 74 137 65 144 63C150 71 148 79 139 84Z" fill={isDark ? '#83b783' : '#92c47c'} />
+      <path d="M126 71C120 62 122 55 128 53C134 60 133 67 126 71Z" fill={isDark ? '#75ac79' : '#7eaf69'} />
       <ellipse cx="108" cy="57" rx="4" ry="3" fill="#30273a" />
       <path d={petted ? 'M103 62 Q108 68 113 62' : 'M104 62 Q108 66 112 62'} stroke="#65465c" strokeWidth="1.7" strokeLinecap="round" />
       <ellipse cx="85" cy="60" rx="5" ry="3" fill="#f59bb5" opacity=".58" /><ellipse cx="131" cy="60" rx="5" ry="3" fill="#f59bb5" opacity=".58" />
@@ -231,4 +237,5 @@ export function JellyfishCompanion({ isDark, compact = false }) {
     </svg>
   </MascotFrame>;
 }
+
 

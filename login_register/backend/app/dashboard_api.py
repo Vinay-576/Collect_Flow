@@ -739,9 +739,16 @@ def create_dashboard_router(db: Any, get_current_user: Any) -> APIRouter:
         case_invoice_map = _case_invoice_map(context)
         invoices_by_id = {str(item.get("_id")): item for item in invoices}
         debtors = _debtor_names([_first(case, "debtorId", "debtor_id") for case in context["cases"]], context)
+        creditor_names = {
+            str(item.get("_id")): str(_first(item, "name", "legalName", "tradeName", default="Client"))
+            for item in _find(db, "organizations", _field_filter(("_id",), context["creditor_ids"]))
+        }
+        portfolios = {str(item.get("_id")): item for item in context["portfolios"]}
         rows = []
         for case in context["cases"]:
             debtor_id = _first(case, "debtorId", "debtor_id")
+            creditor_id = _first(case, "creditorOrgId", "creditorOrganizationId", "creditor_org_id")
+            portfolio_id = _first(case, "portfolioId", "portfolio_id")
             linked_ids = case_invoice_map.get(str(case.get("_id")), [])
             balance_by_currency: dict[str, Decimal] = {}
             for invoice_id in linked_ids:
@@ -753,7 +760,11 @@ def create_dashboard_router(db: Any, get_current_user: Any) -> APIRouter:
             rows.append({
                 "id": str(case.get("_id", "")),
                 "case_reference": str(_first(case, "caseReference", "caseNumber", "reference", "case_reference", default="")),
+                "client_id": str(creditor_id or ""),
+                "client": creditor_names.get(str(creditor_id), "Client"),
                 "debtor": str(_first(debtor, "tradeName", "legalName", "name", "trade_name", "legal_name", default="Unknown debtor")),
+                "debtor_id": str(debtor_id or ""),
+                "portfolio": str(_first(portfolios.get(str(portfolio_id), {}), "name", default="")),
                 "status": str(_first(case, "lifecycleStatus", "status", "workflowStage", "lifecycle_status", default="Open")),
                 "priority": str(_first(case, "priority", default="Normal")),
                 "outstanding_amount": {currency: _money(amount) for currency, amount in sorted(balance_by_currency.items())},
@@ -851,6 +862,7 @@ def create_dashboard_router(db: Any, get_current_user: Any) -> APIRouter:
         financials = _financials(context, invoices)
         invoice_rows = _invoice_rows(context, invoices, financials, now)
         case_rows = _case_rows(context, invoices, financials)
+        case_invoice_map = _case_invoice_map(context)
         task_rows = _task_rows(context, 200)
         active_cases = [
             row for row in case_rows
@@ -943,10 +955,208 @@ def create_dashboard_router(db: Any, get_current_user: Any) -> APIRouter:
 
     @router.get("/debtors")
     def list_debtors(context: dict = Depends(get_context)) -> dict:
+        if context["account_type"] == "agency":
+            debtor_ids = _unique([_first(case, "debtorId", "debtor_id") for case in context["cases"]])
+            debtors = _debtor_names(debtor_ids, context)
+            invoices = _invoice_documents(context)
+            financials = _financials(context, invoices)
+            invoice_rows = _invoice_rows(context, invoices, financials, datetime.now(timezone.utc))
+            cases_by_debtor: dict[str, list[dict]] = {}
+            for case in context["cases"]:
+                cases_by_debtor.setdefault(str(_first(case, "debtorId", "debtor_id", default="")), []).append(case)
+            invoices_by_debtor: dict[str, list[dict]] = {}
+            for row in invoice_rows:
+                invoices_by_debtor.setdefault(row["debtor_id"], []).append(row)
+            client_names = {
+                str(item.get("_id")): str(_first(item, "name", "legalName", "tradeName", default="Client"))
+                for item in _find(db, "organizations", _field_filter(("_id",), context["creditor_ids"]))
+            }
+            items = []
+            for debtor_id in debtor_ids:
+                debtor = debtors.get(str(debtor_id))
+                if not debtor:
+                    continue
+                related_cases = cases_by_debtor.get(str(debtor_id), [])
+                related_invoices = invoices_by_debtor.get(str(debtor_id), [])
+                balances: dict[str, Decimal] = {}
+                for row in related_invoices:
+                    if row["status"] not in {"Settled", "Cancelled", "Written off", "Draft"}:
+                        balances[row["currency"]] = balances.get(row["currency"], Decimal("0")) + _decimal(row["outstanding_amount"])
+                creditor_id = _first(debtor, "creditorOrgId", "creditorOrganizationId", "creditor_org_id")
+                items.append({
+                    "id": str(debtor_id),
+                    "name": str(_first(debtor, "tradeName", "legalName", "name", "trade_name", "legal_name", default="Unnamed debtor")),
+                    "email": str(_first(debtor, "email", default="")),
+                    "client": client_names.get(str(creditor_id), "Client"),
+                    "case_count": len(related_cases),
+                    "outstanding_amount": {currency: _money(amount) for currency, amount in sorted(balances.items())},
+                })
+            items.sort(key=lambda item: item["name"].lower())
+            return {"items": items, "total": len(items)}
         if context["account_type"] != "creditor":
             return {"items": []}
         debtors = _find(db, "debtors", _org_filter(context["org_id"], ("creditorOrgId", "creditorOrganizationId", "creditor_org_id")), sort=("name", 1), limit=1000)
         return {"items": [{"id": str(item.get("_id", "")), "name": str(_first(item, "tradeName", "legalName", "name", "trade_name", "legal_name", default="Unnamed debtor")), "email": str(_first(item, "email", default=""))} for item in debtors]}
+
+    @router.get("/agency/clients")
+    def list_agency_clients(context: dict = Depends(get_context)) -> dict:
+        if context["account_type"] != "agency":
+            raise HTTPException(status_code=403, detail="Client portfolios are available to an agency workspace.")
+        creditor_ids = context["creditor_ids"]
+        organizations = {
+            str(item.get("_id")): item
+            for item in _find(db, "organizations", _field_filter(("_id",), creditor_ids))
+        }
+        invoices = _invoice_documents(context)
+        financials = _financials(context, invoices)
+        invoice_rows = _invoice_rows(context, invoices, financials, datetime.now(timezone.utc))
+        invoice_by_id = {str(item.get("_id")): item for item in invoices}
+        row_by_invoice = {row["id"]: row for row in invoice_rows}
+        case_rows = _case_rows(context, invoices, financials)
+        cases_by_client: dict[str, list[dict]] = {}
+        for case in context["cases"]:
+            creditor_id = str(_first(case, "creditorOrgId", "creditorOrganizationId", "creditor_org_id", default=""))
+            cases_by_client.setdefault(creditor_id, []).append(case)
+        portfolios_by_engagement: dict[str, list[dict]] = {}
+        for portfolio in context["portfolios"]:
+            engagement_id = str(_first(portfolio, "clientEngagementId", "engagementId", "client_engagement_id", "engagement_id", default=""))
+            portfolios_by_engagement.setdefault(engagement_id, []).append(portfolio)
+        items = []
+        for engagement in context["engagements"]:
+            creditor_id = _first(engagement, "creditorOrgId", "creditorOrganizationId", "creditor_org_id")
+            if not creditor_id:
+                continue
+            client = organizations.get(str(creditor_id), {})
+            engagement_id = str(engagement.get("_id", ""))
+            related_cases = cases_by_client.get(str(creditor_id), [])
+            related_case_rows = [row for row in case_rows if row["client_id"] == str(creditor_id)]
+            active_cases = sum(1 for case in related_cases if _normal(_first(case, "lifecycleStatus", "status", "workflowStage", default="open")) not in {"resolved", "closed", "cancelled", "canceled", "written off"})
+            balances: dict[str, Decimal] = {}
+            invoice_ids = _unique(
+                invoice_id
+                for case in related_cases
+                for invoice_id in case_invoice_map.get(str(case.get("_id")), [])
+            )
+            for invoice_id in invoice_ids:
+                invoice = invoice_by_id.get(str(invoice_id))
+                row = row_by_invoice.get(str(invoice_id))
+                if not invoice or not row or row["status"] in {"Settled", "Cancelled", "Written off", "Draft"}:
+                    continue
+                currency = row["currency"]
+                balances[currency] = balances.get(currency, Decimal("0")) + _decimal(row["outstanding_amount"])
+            linked_portfolios = portfolios_by_engagement.get(engagement_id, [])
+            if not linked_portfolios:
+                linked_ids = _id_values(_first(engagement, "portfolioIds", "portfolio_ids", default=[]))
+                linked_ids.extend(_id_values(_first(engagement, "portfolioId", "portfolio_id")))
+                linked_portfolios = [portfolio for portfolio in context["portfolios"] if any(_same_id(portfolio.get("_id"), item) for item in linked_ids)]
+            items.append({
+                "id": str(engagement.get("_id", "")),
+                "client_id": str(creditor_id),
+                "name": str(_first(client, "name", "legalName", "tradeName", default=_first(engagement, "name", default="Client engagement"))),
+                "status": str(_first(engagement, "status", default="active")),
+                "start_date": _iso(_first(engagement, "startAt", "startDate", "createdAt")),
+                "active_cases": active_cases,
+                "outstanding_amount": {currency: _money(amount) for currency, amount in sorted(balances.items())},
+                "portfolios": [{"id": str(item.get("_id", "")), "name": str(_first(item, "name", "portfolioName", default="Portfolio")), "status": str(_first(item, "status", default="active"))} for item in linked_portfolios],
+                "cases": len(related_case_rows),
+            })
+        items.sort(key=lambda item: item["name"].lower())
+        return {"items": items, "total": len(items)}
+
+    @router.get("/agency/team")
+    def agency_team(context: dict = Depends(get_context)) -> dict:
+        if context["account_type"] != "agency":
+            raise HTTPException(status_code=403, detail="Collector workload is available to an agency workspace.")
+        invoices = _invoice_documents(context)
+        financials = _financials(context, invoices)
+        rows = _case_rows(context, invoices, financials)
+        cases = {str(item.get("_id")): item for item in context["cases"]}
+        grouped: dict[str, dict] = {}
+        for row in rows:
+            case = cases.get(row["id"], {})
+            collector_id = str(_first(case, "assignedCollectorId", "assignedTo", "assigneeUserId", "assigned_collector_id", default=""))
+            name = row["assigned_collector"].strip() or "Unassigned"
+            key = collector_id or name.lower()
+            entry = grouped.setdefault(key, {"id": key, "name": name, "active_cases": 0, "case_count": 0, "outstanding": {}})
+            entry["case_count"] += 1
+            if _normal(row["status"]) not in {"resolved", "closed", "cancelled", "canceled", "written off"}:
+                entry["active_cases"] += 1
+                for currency, amount in (row["outstanding_amount"] or {}).items():
+                    entry["outstanding"][currency] = entry["outstanding"].get(currency, Decimal("0")) + _decimal(amount)
+        items = [{**entry, "outstanding_amount": {currency: _money(amount) for currency, amount in sorted(entry["outstanding"].items())}} for entry in grouped.values()]
+        items.sort(key=lambda item: (-item["active_cases"], item["name"].lower()))
+        return {"items": items, "total": len(items)}
+
+    @router.get("/promises")
+    def list_promises(context: dict = Depends(get_context)) -> dict:
+        if context["account_type"] not in {"creditor", "agency"}:
+            raise HTTPException(status_code=403, detail="Promises are available to creditor and agency workspaces.")
+        case_ids = _case_ids(context)
+        if not case_ids:
+            return {"items": [], "total": 0}
+        promises = _find(db, "promises", _field_filter(("caseId", "case_id", "recoveryCaseId"), case_ids), sort=("dueDate", 1), limit=250)
+        cases = {str(item.get("_id")): item for item in context["cases"]}
+        invoices = _invoice_documents(context)
+        invoice_by_id = {str(item.get("_id")): item for item in invoices}
+        debtor_ids = [_first(case, "debtorId", "debtor_id") for case in context["cases"]]
+        debtors = _debtor_names(debtor_ids, context)
+        client_names = {str(item.get("_id")): str(_first(item, "name", "legalName", "tradeName", default="Client")) for item in _find(db, "organizations", _field_filter(("_id",), context["creditor_ids"]))}
+        items = []
+        for promise in promises:
+            case_id = _first(promise, "caseId", "case_id", "recoveryCaseId")
+            case = cases.get(str(case_id))
+            if not case:
+                continue
+            invoice = invoice_by_id.get(str(_first(promise, "invoiceId", "invoice_id")), {})
+            debtor_id = _first(case, "debtorId", "debtor_id")
+            creditor_id = _first(case, "creditorOrgId", "creditorOrganizationId", "creditor_org_id")
+            items.append({
+                "id": str(promise.get("_id", "")),
+                "case_reference": str(_first(case, "caseReference", "caseNumber", "reference", default="")),
+                "debtor": str(_first(debtors.get(str(debtor_id), {}), "tradeName", "legalName", "name", default="Unknown debtor")),
+                "client": client_names.get(str(creditor_id), "Client"),
+                "invoice_number": str(_first(invoice, "invoiceNumber", "number", default="")),
+                "amount": _money(_first(promise, "amount", "installmentAmount", "installment_amount")),
+                "currency": str(_first(promise, "currency", default=_currency(invoice))).upper(),
+                "due_date": _iso(_first(promise, "dueDate", "due_date", "promisedDate")),
+                "status": str(_first(promise, "status", default="scheduled")),
+            })
+        return {"items": items, "total": len(items)}
+
+    @router.get("/disputes")
+    def list_disputes(context: dict = Depends(get_context)) -> dict:
+        if context["account_type"] not in {"creditor", "agency"}:
+            raise HTTPException(status_code=403, detail="Disputes are available to creditor and agency workspaces.")
+        case_ids = _case_ids(context)
+        if not case_ids:
+            return {"items": [], "total": 0}
+        disputes = _find(db, "disputes", _field_filter(("caseId", "case_id"), case_ids), sort=("openedAt", -1), limit=250)
+        cases = {str(item.get("_id")): item for item in context["cases"]}
+        invoices = _invoice_documents(context)
+        invoice_by_id = {str(item.get("_id")): item for item in invoices}
+        debtors = _debtor_names([_first(case, "debtorId", "debtor_id") for case in context["cases"]], context)
+        client_names = {str(item.get("_id")): str(_first(item, "name", "legalName", "tradeName", default="Client")) for item in _find(db, "organizations", _field_filter(("_id",), context["creditor_ids"]))}
+        items = []
+        for dispute in disputes:
+            case_id = _first(dispute, "caseId", "case_id")
+            case = cases.get(str(case_id))
+            if not case:
+                continue
+            invoice_id = _first(dispute, "invoiceId", "invoice_id")
+            debtor_id = _first(case, "debtorId", "debtor_id")
+            creditor_id = _first(case, "creditorOrgId", "creditorOrganizationId", "creditor_org_id")
+            items.append({
+                "id": str(dispute.get("_id", "")),
+                "reference": str(_first(dispute, "disputeReference", "reference", default=f"DSP-{str(dispute.get('_id', ''))[-6:].upper()}")),
+                "subject": str(_first(dispute, "subject", "reason", "issue", "description", default="Invoice dispute")),
+                "client": client_names.get(str(creditor_id), "Client"),
+                "debtor": str(_first(debtors.get(str(debtor_id), {}), "tradeName", "legalName", "name", default="Unknown debtor")),
+                "case_reference": str(_first(case, "caseReference", "caseNumber", "reference", default="")),
+                "invoice_number": str(_first(invoice_by_id.get(str(invoice_id), {}), "invoiceNumber", "number", default="")),
+                "opened_at": _iso(_first(dispute, "openedAt", "createdAt", "opened_at")),
+                "status": str(_first(dispute, "status", default="open")),
+            })
+        return {"items": items, "total": len(items)}
 
     @router.post("/invoices", status_code=status.HTTP_201_CREATED)
     def create_invoice(payload: InvoiceCreateRequest, context: dict = Depends(get_context)) -> dict:

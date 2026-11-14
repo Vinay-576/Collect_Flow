@@ -6,6 +6,7 @@ import {
   CalendarClock,
   FileText,
   FolderOpen,
+  HeartHandshake,
   Home,
   MessageSquareText,
   MessageSquareWarning,
@@ -24,6 +25,14 @@ import { JellyfishCompanion } from './components/RoleCompanions';
 import CreditorOverview from '../../creditor/src/pages/CreditorOverview.jsx';
 import DebtorInvitations from '../../creditor/src/pages/DebtorInvitations.jsx';
 import AgencyOverview from '../../agency/src/pages/AgencyOverview.jsx';
+import {
+  AgencyCasesPage,
+  AgencyClientsPage,
+  AgencyDebtorsPage,
+  AgencyDisputesPage,
+  AgencyPromisesPage,
+  AgencyTeamPage,
+} from '../../agency/src/pages/AgencySections.jsx';
 import DebtorOverview from '../../debtor/src/pages/DebtorOverview.jsx';
 import AdminAccess from '../../admin/src/pages/AdminAccess.jsx';
 import {
@@ -43,7 +52,7 @@ import {
 } from '../../debtor/src/pages/DebtorSections.jsx';
 
 const LOGIN_URL = import.meta.env.VITE_LOGIN_URL || 'http://127.0.0.1:5173/';
-const PAGE_IDS = ['admin', 'overview', 'invoices', 'debtors', 'payments', 'reports', 'documents', 'pulse', 'plans', 'disputes', 'messages', 'settings'];
+const PAGE_IDS = ['admin', 'overview', 'invoices', 'debtors', 'payments', 'reports', 'documents', 'pulse', 'plans', 'disputes', 'messages', 'settings', 'clients', 'cases', 'promises', 'team'];
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: Home },
   { id: 'invoices', label: 'Invoices', icon: Wallet },
@@ -64,6 +73,20 @@ const DEBTOR_NAV_ITEMS = [
   { id: 'messages', label: 'Messages & Support', description: 'Communicate about your cases', icon: MessageSquareText },
   { id: 'settings', label: 'My Profile', description: 'Personal details and security settings', icon: UserRound },
 ];
+const AGENCY_NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: Home, group: 'Workspace' },
+  { id: 'clients', label: 'Clients & Portfolios', icon: FolderOpen, group: 'Portfolio' },
+  { id: 'cases', label: 'Recovery Cases', icon: HeartHandshake, group: 'Portfolio' },
+  { id: 'debtors', label: 'Debtors', icon: Users, group: 'Portfolio' },
+  { id: 'pulse', label: 'Tasks & Follow-ups', icon: CalendarCheck, group: 'Recovery' },
+  { id: 'promises', label: 'Promises to Pay', icon: CalendarClock, group: 'Recovery' },
+  { id: 'disputes', label: 'Disputes', icon: MessageSquareWarning, group: 'Recovery' },
+  { id: 'payments', label: 'Payments & Reconciliation', icon: CreditCard, group: 'Recovery' },
+  { id: 'documents', label: 'Documents & Evidence', icon: FileText, group: 'Operations' },
+  { id: 'team', label: 'Team & Collectors', icon: Users, group: 'Operations' },
+  { id: 'reports', label: 'Reports & Analytics', icon: BarChart2, group: 'Operations' },
+  { id: 'settings', label: 'Settings', icon: Settings, group: 'Operations' },
+];
 
 function viewFromPath(pathname) {
   const segment = pathname.replace(/\/+$/, '').split('/').pop();
@@ -80,7 +103,8 @@ function roleFromPath(pathname) {
 
 function navigationFor(user, accountType = user.account_type, readOnlyAdminScope = false) {
   if (accountType === 'debtor') return DEBTOR_NAV_ITEMS;
-  if (accountType === 'agency' || readOnlyAdminScope || !['owner', 'admin'].includes(String(user.role || '').toLowerCase())) {
+  if (accountType === 'agency') return AGENCY_NAV_ITEMS;
+  if (readOnlyAdminScope || !['owner', 'admin'].includes(String(user.role || '').toLowerCase())) {
     return NAV_ITEMS.filter(({ id }) => id !== 'debtors');
   }
   return NAV_ITEMS;
@@ -153,7 +177,7 @@ function Header({ user, accountType, adminScope, dark, page, navItems, platformA
     </div>
     <div className="mx-auto max-w-[1480px] px-3 pb-3 sm:px-7">
       {accountType === 'debtor' && <DebtorNavigationBar dark={dark} page={page} navItems={navItems} onNavigate={onNavigate} />}
-      {accountType !== 'debtor' && navItems.length > 0 && <nav aria-label="Dashboard sections" className={`mx-auto flex w-max max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1.5 ${dark ? 'border-[#302744] bg-[#171326]' : 'border-[#e8e2f2] bg-white shadow-[0_5px_18px_rgba(50,34,89,.04)]'}`}>
+      {accountType !== 'debtor' && accountType !== 'agency' && navItems.length > 0 && <nav aria-label="Dashboard sections" className={`mx-auto flex w-max max-w-full items-center gap-1 overflow-x-auto rounded-full border p-1.5 ${dark ? 'border-[#302744] bg-[#171326]' : 'border-[#e8e2f2] bg-white shadow-[0_5px_18px_rgba(50,34,89,.04)]'}`}>
         {navItems.map(({ id, label, icon: Icon }) => {
           const selected = page === id;
           return <button key={id} type="button" onClick={() => onNavigate(id)} aria-current={selected ? 'page' : undefined} className={`flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-[11px] font-semibold transition sm:px-4 sm:text-xs ${selected ? 'bg-violet-600 text-white shadow-[0_5px_14px_rgba(120,81,221,.24)]' : dark ? 'text-[#b9b0c9] hover:bg-white/5 hover:text-white' : 'text-[#766d83] hover:bg-violet-50 hover:text-[#35244e]'}`}><Icon size={15} strokeWidth={1.9} /><span>{label}</span></button>;
@@ -175,6 +199,36 @@ function DebtorNavigationBar({ dark, page, navItems, onNavigate }) {
       </button>;
     })}
   </nav>;
+}
+
+function AgencyNavigation({ dark, page, navItems, onNavigate }) {
+  const groups = ['Workspace', 'Portfolio', 'Recovery', 'Operations'];
+  const controlClass = dark
+    ? 'border-[#302744] bg-[#19152a] text-[#e8e1f0]'
+    : 'border-[#e8e2f2] bg-white text-[#352747]';
+  return <>
+    <label className="sr-only" htmlFor="agency-dashboard-navigation">Agency dashboard menu</label>
+    <select id="agency-dashboard-navigation" value={page} onChange={(event) => onNavigate(event.target.value)} className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm outline-none focus:border-violet-400 lg:hidden ${controlClass}`}>
+      {navItems.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+    </select>
+    <nav aria-label="Agency dashboard menu" className={`hidden rounded-3xl border p-3 shadow-[0_12px_40px_rgba(47,30,83,.06)] lg:block ${controlClass}`}>
+      <div className={`mb-3 rounded-2xl px-3 py-3 ${dark ? 'bg-violet-500/[.08]' : 'bg-violet-50/80'}`}>
+        <p className={`text-[9px] font-extrabold uppercase tracking-[.16em] ${dark ? 'text-violet-300' : 'text-violet-700'}`}>Agency workspace</p>
+        <p className={`mt-1 text-xs font-semibold ${dark ? 'text-slate-200' : 'text-[#51445f]'}`}>Portfolio operations</p>
+      </div>
+      {groups.map((group) => {
+        const items = navItems.filter((item) => item.group === group);
+        if (!items.length) return null;
+        return <div key={group} className="mb-2 last:mb-0">
+          <p className={`px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.15em] ${dark ? 'text-[#81778f]' : 'text-[#9a90a5]'}`}>{group}</p>
+          <div className="space-y-1">{items.map(({ id, label, icon: Icon }) => {
+            const selected = page === id;
+            return <button key={id} type="button" onClick={() => onNavigate(id)} aria-current={selected ? 'page' : undefined} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[11px] font-semibold transition ${selected ? 'bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-[0_6px_16px_rgba(112,75,190,.24)]' : dark ? 'text-[#c1b8ce] hover:bg-white/[.05] hover:text-white' : 'text-[#6e647a] hover:bg-violet-50 hover:text-violet-800'}`}><Icon size={15} strokeWidth={selected ? 2.2 : 1.8} /><span className="min-w-0 truncate">{label}</span></button>;
+          })}</div>
+        </div>;
+      })}
+    </nav>
+  </>;
 }
 
 function FixedJellyfish({ dark, hidden }) {
@@ -340,28 +394,38 @@ export default function DashboardApp({ dashboardKind = 'auto' }) {
   };
   const navItems = page === 'admin' ? [] : navigationFor(user, activeAccountType, Boolean(adminScope));
   const contentProps = { dark, user: activeUser, companionsHidden, onToggleCompanions: () => setCompanionsHidden((hidden) => !hidden) };
+  const pageContent = <>
+    {page === 'admin' && user.platform_admin && <AdminAccess dark={dark} user={user} onOpenWorkspace={openAdminWorkspace} onOpenOwnAccount={openOwnAccount} />}
+    {page === 'overview' && activeAccountType === 'debtor' && <DebtorOverview {...contentProps} onNavigate={navigate} />}
+    {page === 'overview' && activeAccountType === 'agency' && <AgencyOverview {...contentProps} onNavigate={navigate} />}
+    {page === 'overview' && activeAccountType === 'creditor' && <CreditorOverview {...contentProps} onNavigate={navigate} />}
+    {page === 'invoices' && <InvoicesPage dark={dark} user={activeUser} initialQuery={searchSeed} />}
+    {page === 'clients' && activeAccountType === 'agency' && <AgencyClientsPage dark={dark} onNavigate={navigate} />}
+    {page === 'cases' && activeAccountType === 'agency' && <AgencyCasesPage dark={dark} />}
+    {page === 'debtors' && activeAccountType === 'agency' && <AgencyDebtorsPage dark={dark} />}
+    {page === 'debtors' && activeAccountType === 'creditor' && !adminScope && <DebtorInvitations dark={dark} user={activeUser} />}
+    {page === 'promises' && activeAccountType === 'agency' && <AgencyPromisesPage dark={dark} />}
+    {page === 'payments' && activeAccountType === 'debtor' && <DebtorPaymentsPage dark={dark} />}
+    {page === 'payments' && activeAccountType !== 'debtor' && <PaymentsPage dark={dark} user={activeUser} />}
+    {page === 'reports' && activeAccountType !== 'debtor' && <ReportsPage dark={dark} />}
+    {page === 'documents' && activeAccountType === 'debtor' && <DebtorDocumentsPage dark={dark} readOnly={activeUser.platform_admin === true} />}
+    {page === 'documents' && activeAccountType !== 'debtor' && <DocumentsPage dark={dark} />}
+    {page === 'plans' && activeAccountType === 'debtor' && <DebtorPaymentPlansPage dark={dark} readOnly={activeUser.platform_admin === true} />}
+    {page === 'disputes' && activeAccountType === 'agency' && <AgencyDisputesPage dark={dark} />}
+    {page === 'disputes' && activeAccountType === 'debtor' && <DebtorDisputesPage dark={dark} readOnly={activeUser.platform_admin === true} />}
+    {page === 'messages' && activeAccountType === 'debtor' && <DebtorMessagesPage dark={dark} readOnly={activeUser.platform_admin === true} />}
+    {page === 'team' && activeAccountType === 'agency' && <AgencyTeamPage dark={dark} />}
+    {page === 'pulse' && activeAccountType !== 'debtor' && <DailyPulsePage {...contentProps} />}
+    {page === 'settings' && <SettingsPage {...contentProps} themePreference={themePreference} onThemeChange={setThemePreference} onSignOut={signOut} />}
+  </>;
   return <div className={`min-h-screen transition-colors ${dark ? 'bg-[#100d1b] text-slate-100' : 'bg-[#f7f5fb] text-[#241a35]'}`}>
     <Header user={user} accountType={activeAccountType} adminScope={adminScope} platformAdmin={user.platform_admin === true} dark={dark} page={page} navItems={navItems} onNavigate={navigate} onThemeToggle={() => setThemePreference(dark ? 'light' : 'dark')} onGlobalSearch={handleSearch} onSignOut={signOut} onAdminHome={returnToAdminHome} onOpenOwnAccount={openOwnAccount} />
     <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-7 sm:py-8">
-      <div className="min-w-0">
-      {page === 'admin' && user.platform_admin && <AdminAccess dark={dark} user={user} onOpenWorkspace={openAdminWorkspace} onOpenOwnAccount={openOwnAccount} />}
-      {page === 'overview' && activeAccountType === 'debtor' && <DebtorOverview {...contentProps} onNavigate={navigate} />}
-      {page === 'overview' && activeAccountType === 'agency' && <AgencyOverview {...contentProps} onNavigate={navigate} />}
-      {page === 'overview' && activeAccountType === 'creditor' && <CreditorOverview {...contentProps} onNavigate={navigate} />}
-      {page === 'invoices' && <InvoicesPage dark={dark} user={activeUser} initialQuery={searchSeed} />}
-      {page === 'debtors' && activeAccountType === 'creditor' && !adminScope && <DebtorInvitations dark={dark} user={activeUser} />}
-      {page === 'payments' && activeAccountType === 'debtor' && <DebtorPaymentsPage dark={dark} />}
-      {page === 'payments' && activeAccountType !== 'debtor' && <PaymentsPage dark={dark} user={activeUser} />}
-      {page === 'reports' && activeAccountType !== 'debtor' && <ReportsPage dark={dark} />}
-      {page === 'documents' && activeAccountType === 'debtor' && <DebtorDocumentsPage dark={dark} readOnly={activeUser.platform_admin === true} />}
-      {page === 'documents' && activeAccountType !== 'debtor' && <DocumentsPage dark={dark} />}
-      {page === 'plans' && activeAccountType === 'debtor' && <DebtorPaymentPlansPage dark={dark} readOnly={activeUser.platform_admin === true} />}
-      {page === 'disputes' && activeAccountType === 'debtor' && <DebtorDisputesPage dark={dark} readOnly={activeUser.platform_admin === true} />}
-      {page === 'messages' && activeAccountType === 'debtor' && <DebtorMessagesPage dark={dark} readOnly={activeUser.platform_admin === true} />}
-      {page === 'pulse' && activeAccountType !== 'debtor' && <DailyPulsePage {...contentProps} />}
-      {page === 'settings' && <SettingsPage {...contentProps} themePreference={themePreference} onThemeChange={setThemePreference} onSignOut={signOut} />}
-      </div>
+      {activeAccountType === 'agency' && page !== 'admin'
+        ? <div className="grid gap-5 lg:grid-cols-[238px_minmax(0,1fr)] lg:items-start"><aside className="lg:sticky lg:top-[145px]"><AgencyNavigation dark={dark} page={page} navItems={navItems} onNavigate={navigate} /></aside><div className="min-w-0">{pageContent}</div></div>
+        : <div className="min-w-0">{pageContent}</div>}
     </main>
     {activeAccountType === 'debtor' && page !== 'admin' && <FixedJellyfish dark={dark} hidden={companionsHidden} />}
   </div>;
 }
+
