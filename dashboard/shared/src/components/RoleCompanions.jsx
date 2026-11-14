@@ -32,39 +32,45 @@ function MascotFrame({ label, isDark, petted, pet, compact = false, noHoverLift 
 export function PandaCompanion({ isDark }) {
   const { petted, pet } = usePetReaction();
   return <MascotFrame label="panda" isDark={isDark} petted={petted} pet={pet}>
-    <svg className="h-28 w-48 overflow-visible" viewBox="0 0 215 118" fill="none" aria-hidden="true">
-      <ellipse cx="110" cy="108" rx="51" ry="6" fill={isDark ? '#8066bd' : '#c9bee2'} opacity=".32" />
-      {/* Bamboo sprig behind the panda */}
-      <path d="M38 105 Q39 78 27 58 M37 86 Q23 78 20 68 M39 76 Q51 70 54 59" stroke={isDark ? '#80ad8b' : '#81a986'} strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M21 68 C13 64 14 57 23 59 C28 60 27 65 21 68Z M53 60 C52 51 59 49 62 56 C63 61 58 63 53 60Z" fill={isDark ? '#8bc39a' : '#91bd91'} />
-      {/* Panda body, arms and paws */}
-      <ellipse cx="108" cy="91" rx="31" ry="27" fill="#272437" />
-      <ellipse cx="108" cy="95" rx="17" ry="19" fill={isDark ? '#f0eafa' : '#fffdfd'} />
-      <ellipse cx="83" cy="88" rx="11" ry="18" transform="rotate(-25 83 88)" fill="#282638" />
-      <ellipse cx="133" cy="88" rx="11" ry="18" transform="rotate(25 133 88)" fill="#282638" />
-      <ellipse cx="90" cy="105" rx="13" ry="8" fill="#282638" />
-      <ellipse cx="126" cy="105" rx="13" ry="8" fill="#282638" />
-      <circle cx="91" cy="105" r="2" fill="#d9b7ce" /><circle cx="98" cy="107" r="2" fill="#d9b7ce" />
-      <circle cx="120" cy="107" r="2" fill="#d9b7ce" /><circle cx="127" cy="105" r="2" fill="#d9b7ce" />
-      {/* Round panda head */}
-      <circle cx="108" cy="48" r="37" fill="#282638" />
-      <circle cx="108" cy="51" r="31" fill={isDark ? '#faf8ff' : '#fffefd'} />
-      <circle cx="81" cy="23" r="12" fill="#282638" /><circle cx="135" cy="23" r="12" fill="#282638" />
-      <circle cx="81" cy="23" r="5.5" fill="#d9b8d0" /><circle cx="135" cy="23" r="5.5" fill="#d9b8d0" />
-      {/* Eye patches and happy eyes */}
-      <ellipse cx="94" cy="48" rx="8.5" ry="11" transform="rotate(22 94 48)" fill="#282638" />
-      <ellipse cx="122" cy="48" rx="8.5" ry="11" transform="rotate(-22 122 48)" fill="#282638" />
-      {petted ? <g stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M90 48 Q94 52 98 48" /><path d="M118 48 Q122 52 126 48" /></g> : <g fill="#fff"><circle cx="96" cy="45" r="2" /><circle cx="124" cy="45" r="2" /></g>}
-      {/* A bamboo shoot reaches the panda's mouth and rests in its paw. */}
-      <path d="M162 108C145 94 133 81 122 70C118 66 115 63 112 60" stroke={isDark ? '#6f9d75' : '#719f60'} strokeWidth="4.2" strokeLinecap="round" />
-      <path d="M148 95l4-5M136 83l4-5M125 72l4-5" stroke={isDark ? '#9ac590' : '#98bf79'} strokeWidth="2" strokeLinecap="round" />
-      <path d="M151 93C155 81 165 77 171 81C168 91 160 96 151 93Z" fill={isDark ? '#75ac79' : '#7eaf69'} />
-      <path d="M139 84C133 74 137 65 144 63C150 71 148 79 139 84Z" fill={isDark ? '#83b783' : '#92c47c'} />
-      <path d="M126 71C120 62 122 55 128 53C134 60 133 67 126 71Z" fill={isDark ? '#75ac79' : '#7eaf69'} />
-      <ellipse cx="108" cy="57" rx="4" ry="3" fill="#30273a" />
-      <path d={petted ? 'M103 62 Q108 68 113 62' : 'M104 62 Q108 66 112 62'} stroke="#65465c" strokeWidth="1.7" strokeLinecap="round" />
-      <ellipse cx="85" cy="60" rx="5" ry="3" fill="#f59bb5" opacity=".58" /><ellipse cx="131" cy="60" rx="5" ry="3" fill="#f59bb5" opacity=".58" />
-      {petted && <path d="M151 25 l2 5 5 1 -5 2 -2 5 -2 -5 -5 -2 5 -1z" fill="#f5c765" />}
+    <svg className="h-32 w-48 overflow-visible" viewBox="0 0 220 145" fill="none" aria-hidden="true">
+      <ellipse cx="111" cy="137" rx="67" ry="6" fill={isDark ? '#8066bd' : '#c9bee2'} opacity=".32" />
+      {/* A tiny bamboo sprig peeks out from behind the seated panda. */}
+      <path d="M48 130C48 111 42 98 31 88M47 114C34 111 27 103 25 93M48 104C58 97 61 88 60 81" stroke={isDark ? '#82b68c' : '#80a978'} strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M25 94C16 90 17 83 25 84C31 85 31 91 25 94ZM60 83C57 75 63 71 68 77C71 82 67 85 60 83Z" fill={isDark ? '#9aca91' : '#91bd83'} />
+
+      {/* Plump seated body, tucked paws and tiny tail. */}
+      <ellipse cx="111" cy="103" rx="54" ry="39" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.7" />
+      <ellipse cx="164" cy="100" rx="10" ry="9" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.4" />
+      <ellipse cx="71" cy="122" rx="25" ry="17" fill="#211f29" stroke="#292733" strokeWidth="2.4" />
+      <ellipse cx="151" cy="122" rx="25" ry="17" fill="#211f29" stroke="#292733" strokeWidth="2.4" />
+      <ellipse cx="66" cy="121" rx="7" ry="5" fill="#8c8796" opacity=".8" /><ellipse cx="77" cy="127" rx="4" ry="3" fill="#aaa5b1" />
+      <ellipse cx="146" cy="121" rx="7" ry="5" fill="#8c8796" opacity=".8" /><ellipse cx="157" cy="127" rx="4" ry="3" fill="#aaa5b1" />
+      <ellipse cx="112" cy="108" rx="26" ry="22" fill={isDark ? '#f2edf8' : '#fff'} stroke="#e8e3eb" strokeWidth="1.4" />
+      <path d="M67 94C75 83 86 82 95 90L104 110C106 118 98 123 91 118L73 108C66 104 63 99 67 94Z" fill="#211f29" />
+      <path d="M157 94C150 83 139 82 130 90L120 109C117 117 125 123 133 118L151 108C158 104 161 99 157 94Z" fill="#211f29" />
+
+      {/* Oversized round head, soft ears and inky panda eye patches. */}
+      <circle cx="111" cy="55" r="44" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.8" />
+      <circle cx="76" cy="24" r="13" fill="#211f29" stroke="#292733" strokeWidth="2" />
+      <circle cx="146" cy="24" r="13" fill="#211f29" stroke="#292733" strokeWidth="2" />
+      <circle cx="76" cy="24" r="5" fill="#605b68" /><circle cx="146" cy="24" r="5" fill="#605b68" />
+      <ellipse cx="91" cy="54" rx="8.5" ry="12" transform="rotate(24 91 54)" fill="#211f29" />
+      <ellipse cx="130" cy="54" rx="9" ry="12.5" transform="rotate(-22 130 54)" fill="#211f29" />
+      {petted
+        ? <g stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M87 54Q91 59 96 54" /><path d="M125 54Q130 59 135 54" /></g>
+        : <g fill="#fff"><circle cx="93" cy="51" r="2.4" /><circle cx="132" cy="50" r="2.5" /><circle cx="128" cy="57" r="1.1" /></g>}
+      <path d="M72 69l5-3M76 73l6-3M80 76l5-2M151 68l-5-3M147 72l-6-3M143 76l-5-2" stroke="#514c58" strokeWidth="1.4" strokeLinecap="round" opacity=".72" />
+      <ellipse cx="109" cy="68" rx="4.5" ry="3.4" fill="#211f29" />
+      <path d={petted ? 'M103 75Q109 81 115 75' : 'M104 75Q109 80 114 75'} stroke="#292733" strokeWidth="2" strokeLinecap="round" />
+      <ellipse cx="80" cy="69" rx="6" ry="3.5" fill="#e7a7b2" opacity=".52" /><ellipse cx="141" cy="69" rx="6" ry="3.5" fill="#e7a7b2" opacity=".52" />
+
+      {/* Fresh bamboo held between both paws and nibbled at the tip. */}
+      <path d="M151 117C140 106 132 96 126 87C121 81 117 77 113 74" stroke={isDark ? '#82b779' : '#77a761'} strokeWidth="5" strokeLinecap="round" />
+      <path d="M143 108l5-5M135 99l5-5M128 90l5-5" stroke={isDark ? '#c3df9d' : '#a6ca7e'} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M141 106C145 96 154 94 159 98C157 107 150 111 141 106Z" fill={isDark ? '#83bd7c' : '#86b96a'} />
+      <path d="M132 96C126 88 129 81 136 79C142 85 140 92 132 96Z" fill={isDark ? '#9bcc87' : '#9ac77b'} />
+      <path d="M122 84C117 77 119 71 125 69C130 74 129 81 122 84Z" fill={isDark ? '#83bd7c' : '#86b96a'} />
+      <path d="M109 28l2 5 5 1-5 2-2 5-2-5-5-2 5-1z" fill={petted ? '#f4c968' : '#d7c6ed'} />
     </svg>
   </MascotFrame>;
 }
@@ -237,5 +243,6 @@ export function JellyfishCompanion({ isDark, compact = false }) {
     </svg>
   </MascotFrame>;
 }
+
 
 

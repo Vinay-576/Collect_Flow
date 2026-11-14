@@ -4,6 +4,9 @@ import {
   CalendarCheck,
   CreditCard,
   CalendarClock,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   FileText,
   FolderOpen,
   HeartHandshake,
@@ -201,31 +204,46 @@ function DebtorNavigationBar({ dark, page, navItems, onNavigate }) {
   </nav>;
 }
 
-function AgencyNavigation({ dark, page, navItems, onNavigate }) {
+function AgencyNavigation({ dark, page, navItems, onNavigate, collapsed, onToggleCollapsed }) {
   const groups = ['Workspace', 'Portfolio', 'Recovery', 'Operations'];
   const controlClass = dark
-    ? 'border-[#302744] bg-[#19152a] text-[#e8e1f0]'
+    ? 'border-[#332747] bg-[#171222] text-[#e8e1f0]'
     : 'border-[#e8e2f2] bg-white text-[#352747]';
+  const activeGroup = navItems.find((item) => item.id === page)?.group || 'Workspace';
+  const [expandedGroup, setExpandedGroup] = useState(activeGroup);
+
+  useEffect(() => setExpandedGroup(activeGroup), [activeGroup]);
+
   return <>
-    <label className="sr-only" htmlFor="agency-dashboard-navigation">Agency dashboard menu</label>
-    <select id="agency-dashboard-navigation" value={page} onChange={(event) => onNavigate(event.target.value)} className={`w-full rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm outline-none focus:border-violet-400 lg:hidden ${controlClass}`}>
-      {navItems.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
-    </select>
-    <nav aria-label="Agency dashboard menu" className={`hidden rounded-3xl border p-3 shadow-[0_12px_40px_rgba(47,30,83,.06)] lg:block ${controlClass}`}>
-      <div className={`mb-3 rounded-2xl px-3 py-3 ${dark ? 'bg-violet-500/[.08]' : 'bg-violet-50/80'}`}>
-        <p className={`text-[9px] font-extrabold uppercase tracking-[.16em] ${dark ? 'text-violet-300' : 'text-violet-700'}`}>Agency workspace</p>
-        <p className={`mt-1 text-xs font-semibold ${dark ? 'text-slate-200' : 'text-[#51445f]'}`}>Portfolio operations</p>
+    <nav aria-label="Agency dashboard sections" className={`mb-4 flex gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-sm lg:hidden ${controlClass}`}>
+      {navItems.map(({ id, label, icon: Icon }) => {
+        const selected = page === id;
+        return <button key={id} type="button" onClick={() => onNavigate(id)} aria-current={selected ? 'page' : undefined} className={`flex h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-[11px] font-bold transition ${selected ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-950/20' : dark ? 'text-[#bcb2ca] hover:bg-white/[.06]' : 'text-[#746982] hover:bg-violet-50'}`}><Icon size={15} /><span>{label}</span></button>;
+      })}
+    </nav>
+    <nav aria-label="Agency dashboard sections" className={`hidden rounded-[26px] border p-2 shadow-[0_18px_44px_rgba(47,30,83,.12)] transition-[width] duration-300 lg:block ${collapsed ? 'w-[76px]' : 'w-full'} ${controlClass}`}>
+      <div className={`mb-2 flex items-center ${collapsed ? 'flex-col gap-2' : 'justify-between gap-2'} rounded-[19px] p-2 ${dark ? 'bg-gradient-to-br from-violet-500/[.16] to-fuchsia-500/[.04]' : 'bg-gradient-to-br from-violet-50 to-fuchsia-50/50'}`}>
+        <div className={`flex min-w-0 items-center ${collapsed ? 'justify-center' : 'gap-2.5'}`}>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-md shadow-violet-900/20"><FolderOpen size={17} /></span>
+          {!collapsed && <div className="min-w-0"><p className={`truncate text-[9px] font-extrabold uppercase tracking-[.14em] ${dark ? 'text-violet-200' : 'text-violet-700'}`}>Agency workspace</p><p className={`mt-0.5 truncate text-[11px] font-semibold ${dark ? 'text-white' : 'text-[#51445f]'}`}>Portfolio operations</p></div>}
+        </div>
+        <button type="button" onClick={onToggleCollapsed} aria-label={collapsed ? 'Expand agency menu' : 'Collapse agency menu'} title={collapsed ? 'Expand menu' : 'Collapse menu'} className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition ${dark ? 'text-violet-200 hover:bg-white/10' : 'text-violet-700 hover:bg-white/80'}`}>{collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}</button>
       </div>
       {groups.map((group) => {
         const items = navItems.filter((item) => item.group === group);
         if (!items.length) return null;
-        return <div key={group} className="mb-2 last:mb-0">
-          <p className={`px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-[.15em] ${dark ? 'text-[#81778f]' : 'text-[#9a90a5]'}`}>{group}</p>
-          <div className="space-y-1">{items.map(({ id, label, icon: Icon }) => {
+        const groupSelected = activeGroup === group;
+        const groupOpen = expandedGroup === group;
+        return <section key={group} className={`mb-1.5 rounded-2xl last:mb-0 ${groupSelected && !collapsed ? dark ? 'bg-white/[.025]' : 'bg-violet-50/45' : ''}`}>
+          {!collapsed && <button type="button" onClick={() => setExpandedGroup((current) => current === group ? '' : group)} aria-expanded={groupOpen} className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[9px] font-extrabold uppercase tracking-[.13em] transition ${groupSelected ? dark ? 'text-violet-200' : 'text-violet-700' : dark ? 'text-[#81778f] hover:text-[#c1b8ce]' : 'text-[#9a90a5] hover:text-[#6e647a]'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${groupSelected ? 'bg-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,.65)]' : dark ? 'bg-[#514765]' : 'bg-[#ddd4e9]'}`} />
+            <span className="flex-1">{group}</span><span className={`rounded-md px-1.5 py-0.5 text-[8px] ${dark ? 'bg-white/[.06]' : 'bg-white/80'}`}>{items.length}</span><ChevronDown size={12} className={`transition-transform ${groupOpen ? 'rotate-180' : ''}`} />
+          </button>}
+          {(collapsed || groupOpen) && <div className={`space-y-1 ${collapsed ? 'py-1' : 'px-1.5 pb-1.5'}`}>{items.map(({ id, label, icon: Icon }) => {
             const selected = page === id;
-            return <button key={id} type="button" onClick={() => onNavigate(id)} aria-current={selected ? 'page' : undefined} className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[11px] font-semibold transition ${selected ? 'bg-gradient-to-r from-violet-600 to-violet-500 text-white shadow-[0_6px_16px_rgba(112,75,190,.24)]' : dark ? 'text-[#c1b8ce] hover:bg-white/[.05] hover:text-white' : 'text-[#6e647a] hover:bg-violet-50 hover:text-violet-800'}`}><Icon size={15} strokeWidth={selected ? 2.2 : 1.8} /><span className="min-w-0 truncate">{label}</span></button>;
-          })}</div>
-        </div>;
+            return <button key={id} type="button" onClick={() => onNavigate(id)} aria-current={selected ? 'page' : undefined} aria-label={label} title={collapsed ? label : undefined} className={`relative flex w-full items-center ${collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'} rounded-xl py-2.5 text-left text-[11px] font-semibold transition ${selected ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-[0_7px_18px_rgba(112,75,190,.3)]' : dark ? 'text-[#c1b8ce] hover:bg-white/[.07] hover:text-white' : 'text-[#6e647a] hover:bg-white hover:text-violet-800'}`}><Icon size={16} strokeWidth={selected ? 2.2 : 1.8} />{!collapsed && <span className="min-w-0 truncate">{label}</span>}{selected && collapsed && <span className="absolute -right-0.5 h-2 w-2 rounded-full border-2 border-[#171222] bg-fuchsia-300" />}</button>;
+          })}</div>}
+        </section>;
       })}
     </nav>
   </>;
@@ -251,6 +269,7 @@ export default function DashboardApp({ dashboardKind = 'auto' }) {
   const [companionsHidden, setCompanionsHidden] = useState(() => {
     try { return localStorage.getItem('collectflow-hide-companions') === 'true'; } catch { return false; }
   });
+  const [agencyNavigationCollapsed, setAgencyNavigationCollapsed] = useState(false);
   const [searchSeed, setSearchSeed] = useState('');
 
   useEffect(() => {
@@ -422,10 +441,11 @@ export default function DashboardApp({ dashboardKind = 'auto' }) {
     <Header user={user} accountType={activeAccountType} adminScope={adminScope} platformAdmin={user.platform_admin === true} dark={dark} page={page} navItems={navItems} onNavigate={navigate} onThemeToggle={() => setThemePreference(dark ? 'light' : 'dark')} onGlobalSearch={handleSearch} onSignOut={signOut} onAdminHome={returnToAdminHome} onOpenOwnAccount={openOwnAccount} />
     <main className="mx-auto max-w-[1480px] px-4 py-6 sm:px-7 sm:py-8">
       {activeAccountType === 'agency' && page !== 'admin'
-        ? <div className="grid gap-5 lg:grid-cols-[238px_minmax(0,1fr)] lg:items-start"><aside className="lg:sticky lg:top-[145px]"><AgencyNavigation dark={dark} page={page} navItems={navItems} onNavigate={navigate} /></aside><div className="min-w-0">{pageContent}</div></div>
+        ? <div className={`grid gap-5 lg:items-start ${agencyNavigationCollapsed ? 'lg:grid-cols-[76px_minmax(0,1fr)]' : 'lg:grid-cols-[238px_minmax(0,1fr)]'}`}><aside className="lg:sticky lg:top-[145px]"><AgencyNavigation dark={dark} page={page} navItems={navItems} onNavigate={navigate} collapsed={agencyNavigationCollapsed} onToggleCollapsed={() => setAgencyNavigationCollapsed((value) => !value)} /></aside><div className="min-w-0">{pageContent}</div></div>
         : <div className="min-w-0">{pageContent}</div>}
     </main>
     {activeAccountType === 'debtor' && page !== 'admin' && <FixedJellyfish dark={dark} hidden={companionsHidden} />}
   </div>;
 }
+
 

@@ -1013,6 +1013,7 @@ def create_dashboard_router(db: Any, get_current_user: Any) -> APIRouter:
         invoice_by_id = {str(item.get("_id")): item for item in invoices}
         row_by_invoice = {row["id"]: row for row in invoice_rows}
         case_rows = _case_rows(context, invoices, financials)
+        case_invoice_map = _case_invoice_map(context)
         cases_by_client: dict[str, list[dict]] = {}
         for case in context["cases"]:
             creditor_id = str(_first(case, "creditorOrgId", "creditorOrganizationId", "creditor_org_id", default=""))

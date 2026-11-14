@@ -24,7 +24,8 @@ export async function apiRequest(path, options = {}) {
     throw new Error('Your session has expired. Sign in again to continue.');
   }
   if (!response.ok) {
-    const message = typeof data.detail === 'string' ? data.detail : 'CollectFlow could not complete this request.';
+    const detail = typeof data.detail === 'string' ? data.detail : typeof data.message === 'string' ? data.message : '';
+    const message = detail || `CollectFlow could not complete this request (HTTP ${response.status}).`;
     throw new Error(message);
   }
   return data;
