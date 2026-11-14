@@ -32,45 +32,52 @@ function MascotFrame({ label, isDark, petted, pet, compact = false, noHoverLift 
 export function PandaCompanion({ isDark }) {
   const { petted, pet } = usePetReaction();
   return <MascotFrame label="panda" isDark={isDark} petted={petted} pet={pet}>
-    <svg className="h-32 w-48 overflow-visible" viewBox="0 0 220 145" fill="none" aria-hidden="true">
-      <ellipse cx="111" cy="137" rx="67" ry="6" fill={isDark ? '#8066bd' : '#c9bee2'} opacity=".32" />
-      {/* A tiny bamboo sprig peeks out from behind the seated panda. */}
-      <path d="M48 130C48 111 42 98 31 88M47 114C34 111 27 103 25 93M48 104C58 97 61 88 60 81" stroke={isDark ? '#82b68c' : '#80a978'} strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M25 94C16 90 17 83 25 84C31 85 31 91 25 94ZM60 83C57 75 63 71 68 77C71 82 67 85 60 83Z" fill={isDark ? '#9aca91' : '#91bd83'} />
+    <svg className="h-40 w-48 overflow-visible" viewBox="0 0 220 220" fill="none" aria-hidden="true">
+      {/* Transparent, hand-drawn panda artwork: no card, paper, or backdrop. */}
+      <g stroke="#28252d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        {/* Round seated body, little tail, and splayed black feet. */}
+        <path d="M53 139C52 116 70 101 105 99C143 97 166 112 171 139C177 169 155 198 113 202C76 205 54 181 53 153Z" fill="#fffdf8" />
+        <circle cx="171" cy="145" r="10" fill="#fffdf8" />
+        <path d="M62 166C49 169 42 182 46 194C51 208 76 211 96 202C105 198 107 187 99 180C89 170 75 165 62 166Z" fill="#211f27" />
+        <path d="M130 182C137 170 155 166 169 171C185 177 190 193 181 203C171 214 143 211 130 201C123 196 125 189 130 182Z" fill="#211f27" />
+        <path d="M57 181C62 176 70 176 74 182M60 189C66 184 75 185 79 191M151 181C157 176 165 178 169 184M149 190C156 185 165 187 169 193" stroke="#8b8790" strokeWidth="2" />
 
-      {/* Plump seated body, tucked paws and tiny tail. */}
-      <ellipse cx="111" cy="103" rx="54" ry="39" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.7" />
-      <ellipse cx="164" cy="100" rx="10" ry="9" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.4" />
-      <ellipse cx="71" cy="122" rx="25" ry="17" fill="#211f29" stroke="#292733" strokeWidth="2.4" />
-      <ellipse cx="151" cy="122" rx="25" ry="17" fill="#211f29" stroke="#292733" strokeWidth="2.4" />
-      <ellipse cx="66" cy="121" rx="7" ry="5" fill="#8c8796" opacity=".8" /><ellipse cx="77" cy="127" rx="4" ry="3" fill="#aaa5b1" />
-      <ellipse cx="146" cy="121" rx="7" ry="5" fill="#8c8796" opacity=".8" /><ellipse cx="157" cy="127" rx="4" ry="3" fill="#aaa5b1" />
-      <ellipse cx="112" cy="108" rx="26" ry="22" fill={isDark ? '#f2edf8' : '#fff'} stroke="#e8e3eb" strokeWidth="1.4" />
-      <path d="M67 94C75 83 86 82 95 90L104 110C106 118 98 123 91 118L73 108C66 104 63 99 67 94Z" fill="#211f29" />
-      <path d="M157 94C150 83 139 82 130 90L120 109C117 117 125 123 133 118L151 108C158 104 161 99 157 94Z" fill="#211f29" />
+        {/* Soft belly and rounded arms, like the seated sketch in your reference. */}
+        <ellipse cx="111" cy="157" rx="34" ry="38" fill="#fffefa" stroke="#e5e0e4" strokeWidth="1.4" />
+        <path d="M70 129C77 119 90 120 98 133L108 153C111 162 102 168 94 163L73 149C65 144 64 135 70 129Z" fill="#211f27" />
+        <path d="M145 130C137 121 126 123 120 134L112 149C108 158 115 166 124 162L147 149C156 144 153 135 145 130Z" fill="#211f27" />
 
-      {/* Oversized round head, soft ears and inky panda eye patches. */}
-      <circle cx="111" cy="55" r="44" fill={isDark ? '#fbf9ff' : '#fffefd'} stroke="#292733" strokeWidth="2.8" />
-      <circle cx="76" cy="24" r="13" fill="#211f29" stroke="#292733" strokeWidth="2" />
-      <circle cx="146" cy="24" r="13" fill="#211f29" stroke="#292733" strokeWidth="2" />
-      <circle cx="76" cy="24" r="5" fill="#605b68" /><circle cx="146" cy="24" r="5" fill="#605b68" />
-      <ellipse cx="91" cy="54" rx="8.5" ry="12" transform="rotate(24 91 54)" fill="#211f29" />
-      <ellipse cx="130" cy="54" rx="9" ry="12.5" transform="rotate(-22 130 54)" fill="#211f29" />
-      {petted
-        ? <g stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M87 54Q91 59 96 54" /><path d="M125 54Q130 59 135 54" /></g>
-        : <g fill="#fff"><circle cx="93" cy="51" r="2.4" /><circle cx="132" cy="50" r="2.5" /><circle cx="128" cy="57" r="1.1" /></g>}
-      <path d="M72 69l5-3M76 73l6-3M80 76l5-2M151 68l-5-3M147 72l-6-3M143 76l-5-2" stroke="#514c58" strokeWidth="1.4" strokeLinecap="round" opacity=".72" />
-      <ellipse cx="109" cy="68" rx="4.5" ry="3.4" fill="#211f29" />
-      <path d={petted ? 'M103 75Q109 81 115 75' : 'M104 75Q109 80 114 75'} stroke="#292733" strokeWidth="2" strokeLinecap="round" />
-      <ellipse cx="80" cy="69" rx="6" ry="3.5" fill="#e7a7b2" opacity=".52" /><ellipse cx="141" cy="69" rx="6" ry="3.5" fill="#e7a7b2" opacity=".52" />
+        {/* Oversized cream head and little round ears. */}
+        <circle cx="109" cy="78" r="62" fill="#fffdf8" strokeWidth="3.5" />
+        <circle cx="58" cy="34" r="17" fill="#211f27" />
+        <circle cx="160" cy="33" r="17" fill="#211f27" />
+        <path d="M50 31C54 24 63 23 67 29M151 29C155 23 164 24 168 31" stroke="#6f6a73" strokeWidth="2" />
 
-      {/* Fresh bamboo held between both paws and nibbled at the tip. */}
-      <path d="M151 117C140 106 132 96 126 87C121 81 117 77 113 74" stroke={isDark ? '#82b779' : '#77a761'} strokeWidth="5" strokeLinecap="round" />
-      <path d="M143 108l5-5M135 99l5-5M128 90l5-5" stroke={isDark ? '#c3df9d' : '#a6ca7e'} strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M141 106C145 96 154 94 159 98C157 107 150 111 141 106Z" fill={isDark ? '#83bd7c' : '#86b96a'} />
-      <path d="M132 96C126 88 129 81 136 79C142 85 140 92 132 96Z" fill={isDark ? '#9bcc87' : '#9ac77b'} />
-      <path d="M122 84C117 77 119 71 125 69C130 74 129 81 122 84Z" fill={isDark ? '#83bd7c' : '#86b96a'} />
-      <path d="M109 28l2 5 5 1-5 2-2 5-2-5-5-2 5-1z" fill={petted ? '#f4c968' : '#d7c6ed'} />
+        {/* Uneven ink eye patches, bright eyes, a tiny nose and a nibbling smile. */}
+        <ellipse cx="82" cy="78" rx="13" ry="17" transform="rotate(18 82 78)" fill="#211f27" strokeWidth="1.5" />
+        <ellipse cx="134" cy="78" rx="15" ry="18" transform="rotate(-17 134 78)" fill="#211f27" strokeWidth="1.5" />
+        {petted
+          ? <g stroke="#fff" strokeWidth="2.4"><path d="M76 79Q82 85 88 79" /><path d="M127 79Q134 86 141 78" /></g>
+          : <g fill="#fff" stroke="none"><circle cx="85" cy="73" r="3" /><circle cx="137" cy="72" r="3.2" /><circle cx="131" cy="82" r="1.2" /></g>}
+        <ellipse cx="108" cy="96" rx="5.2" ry="3.8" fill="#211f27" stroke="none" />
+        <path d={petted ? 'M102 103Q108 111 115 103' : 'M103 103Q108 109 114 103'} strokeWidth="2.2" />
+        <ellipse cx="68" cy="98" rx="8" ry="5" fill="#e8a6b1" opacity=".5" stroke="none" />
+        <ellipse cx="150" cy="98" rx="8" ry="5" fill="#e8a6b1" opacity=".5" stroke="none" />
+        {/* Fine cheek hatching keeps the pencil-sketch feeling without adding a background. */}
+        <path d="M58 97l7-5M62 102l8-5M68 105l6-4M159 96l-7-5M156 101l-8-5M150 105l-6-4" stroke="#47434b" strokeWidth="1.5" />
+
+        {/* A slim bamboo sprig rises from the panda's paws to its mouth. */}
+        <path d="M158 181C147 163 137 147 128 131C122 121 116 111 110 105" stroke="#739a57" strokeWidth="5" />
+        <path d="M149 165l7-5M139 149l7-5M130 133l7-5M121 117l7-5" stroke="#a8c879" strokeWidth="2" />
+        <path d="M149 164C153 151 164 148 172 153C169 165 160 170 149 164Z" fill="#83ad69" strokeWidth="2" />
+        <path d="M132 138C124 127 128 117 137 115C145 123 142 133 132 138Z" fill="#9ac579" strokeWidth="2" />
+        <path d="M119 119C112 109 115 101 122 99C130 106 127 115 119 119Z" fill="#83ad69" strokeWidth="2" />
+        <path d="M143 168C150 160 160 163 161 171C160 180 150 185 143 180C139 177 139 172 143 168Z" fill="#211f27" />
+
+        {/* Tiny hearts on the belly and a sparkle when the panda is petted. */}
+        <path d="M99 151C95 145 87 149 92 155L100 162L108 155C113 148 105 145 100 151Z" stroke="#302b35" strokeWidth="2.5" />
+        {petted && <path d="M184 54l3 7 7 2-7 3-3 7-3-7-7-3 7-2z" fill="#f1c96a" stroke="none" />}
+      </g>
     </svg>
   </MascotFrame>;
 }
